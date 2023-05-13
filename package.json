@@ -1,0 +1,23 @@
+{
+  "name": "ocado-helper",
+  "version": "1.0.0",
+  "description": "One stop shop for all your recipe needs.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MattGaarder/ocado-helper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MattGaarder/ocado-helper/issues"
+  },
+  "homepage": "https://github.com/MattGaarder/ocado-helper#readme",
+  "dependencies": {
+    "pdfjs-dist": "^3.6.172"
+  }
+}
