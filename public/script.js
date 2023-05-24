@@ -12,6 +12,7 @@ function getPageText(pageNum, PDFDocumentInstance) {
                 var finalString = "";
                 // Concatenate the string of the item to the final string
                 for (var i = 0; i < textItems.length; i++) {
+                    console.log(textItems[i])
                     var item = textItems[i];
                     finalString += item.str + " ";
                 }
@@ -26,26 +27,60 @@ var PDF_URL  = 'assets/receipt-3333162999.pdf';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'public/pdf.worker.js'; // set path to pdf.worker.js
 
+// pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
+    
+//     var totalPages = PDFDocumentInstance.numPages;
+//     var pageNumber = 1;
+
+//     // Extract the text
+//     getPageText(pageNumber , PDFDocumentInstance).then(function(textPage){
+//         // Show the text of the page in the console
+//         console.log(textPage);
+//     });
+
+// }, function (reason) {
+//     // PDF loading error
+//     console.error(reason);
+// });
+
+
+// https://mozilla.github.io/pdf.js/examples/
+// https://ourcodeworld.com/articles/read/405/how-to-convert-pdf-to-text-extract-text-from-pdf-with-javascript#disqus_thread
+
+
+
+function cleanText(rawText) {
+    var lines = rawText.split(' '); // split by newline
+    var items = [];
+    var pricePattern = /^\d+\.\d+/; // regex for a number with a decimal point
+    
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        // Check if the line is preceded by a price
+        if (pricePattern.test(line)) {
+            items.push(lines[i + 2]);
+        }
+    }
+    return items;
+}
+
 pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
     
     var totalPages = PDFDocumentInstance.numPages;
     var pageNumber = 1;
 
     // Extract the text
-    getPageText(pageNumber , PDFDocumentInstance).then(function(textPage){
-        // Show the text of the page in the console
-        console.log(textPage);
+    getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
+        // Clean the text of the page
+        var cleanedText = cleanText(textPage);
+        // Use the cleaned text in your application
+        console.log(cleanedText);
     });
 
 }, function (reason) {
     // PDF loading error
     console.error(reason);
 });
-
-
-
-
-
 
 
 

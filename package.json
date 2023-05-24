@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/MattGaarder/ocado-helper#readme",
   "dependencies": {
+    "papaparse": "^5.4.1",
     "pdfjs-dist": "^3.6.172"
   }
 }
