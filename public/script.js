@@ -1,15 +1,8 @@
-fetch('database/openfoodfacts.json')
-    .then(response => response.json())
-    .then(data => {
-        const ingredientNames = data.tags.map(tag => tag.name); 
-        console.log(ingredientNames) // Now data is a JavaScript object representing the JSON
-    })
-    .catch(error => console.error('Error:', error));
 
 /**
  * @param {Integer} pageNum Specifies the number of the page 
  * @param {PDFDocument} PDFDocumentInstance The PDF document obtained 
- **/
+**/
 function getPageText(pageNum, PDFDocumentInstance) {
     // Return a Promise that is solved once the text of the page is retrieven
     return new Promise(function (resolve, reject) {
@@ -37,29 +30,67 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'public/pdf.worker.js'; // set path to 
 
 // pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
     
-//     var totalPages = PDFDocumentInstance.numPages;
-//     var pageNumber = 1;
+    //     var totalPages = PDFDocumentInstance.numPages;
+    //     var pageNumber = 1;
+    
+    //     // Extract the text
+    //     getPageText(pageNumber , PDFDocumentInstance).then(function(textPage){
+        //         // Show the text of the page in the console
+        //         console.log(textPage);
+        //     });
+        
+        // }, function (reason) {
+            //     // PDF loading error
+            //     console.error(reason);
+            // });
+            
+            
+            // https://mozilla.github.io/pdf.js/examples/
+            // https://ourcodeworld.com/articles/read/405/how-to-convert-pdf-to-text-extract-text-from-pdf-with-javascript#disqus_thread
 
-//     // Extract the text
-//     getPageText(pageNumber , PDFDocumentInstance).then(function(textPage){
-//         // Show the text of the page in the console
-//         console.log(textPage);
-//     });
+let ingredientNames = [];            
 
-// }, function (reason) {
-//     // PDF loading error
-//     console.error(reason);
-// });
+fetch('database/openfoodfacts.json')
+    .then(response => response.json())
+    .then(data => {
+        ingredientNames = data.tags.map(tag => tag.name); 
+        console.log(ingredientNames); // Now data is a JavaScript object representing the JSON
+        pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
+    
+            var totalPages = PDFDocumentInstance.numPages;
+            var pageNumber = 1;
+        
+            // Extract the text
+            getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
+                // Clean the text of the page
+                var splitText = cleanText(textPage, ingredientNames);
+                // Use the cleaned text in your application
+
+            });
+        
+        }, function (reason) {
+            // PDF loading error
+            console.error(reason);
+        });
+    })
+    .catch(error => console.error('Error:', error));
+    
+
+function isFoodItem(item, database) {
+    // Replace with actual database query logic
+    const lowerItem = item.toLowerCase();
+    return database.some(dbItem => dbItem.toLowerCase() === lowerItem);
+}
+
+// This will convert item and each dbItem in database to lowercase before checking for inclusion.
+// Note that I used Array.prototype.some() instead of Array.prototype.includes() because some allows you to specify a function to test each element,
+// giving you the ability to control the case of the strings you're comparing.
 
 
-// https://mozilla.github.io/pdf.js/examples/
-// https://ourcodeworld.com/articles/read/405/how-to-convert-pdf-to-text-extract-text-from-pdf-with-javascript#disqus_thread
-
-
-
-function cleanText(rawText) {
+function cleanText(rawText, database) {
     var lines = rawText.split(' ');
     var items = [];
+    let foodItems = [];
     // var pricePattern = /^\d+\.\d+/; 
     // regex for a number with a decimal point
     
@@ -68,26 +99,18 @@ function cleanText(rawText) {
         // Check if the line is preceded by a price
         items.push(line);
     }
+
+    for (const item of items){
+        if (isFoodItem(item, database)){
+            foodItems.push(item)
+        }
+    }
+
+    console.log(foodItems)
     return items;
 }
 
-pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
-    
-    var totalPages = PDFDocumentInstance.numPages;
-    var pageNumber = 1;
 
-    // Extract the text
-    getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
-        // Clean the text of the page
-        var splitText = cleanText(textPage);
-        // Use the cleaned text in your application
-        console.log(splitText);
-    });
-
-}, function (reason) {
-    // PDF loading error
-    console.error(reason);
-});
 
 
 
