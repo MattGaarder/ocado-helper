@@ -96,13 +96,19 @@ function cleanText(rawText, database) {
     
     for (var i = 0; i < lines.length; i++) {
         var line = lines[i];
-        // Check if the line is preceded by a price
+        let pluralRegex = /[S]$/
+        if(pluralRegex.test(line)){
+            line = line.slice(0, -1);
+        }
         items.push(line);
     }
 
     for (const item of items){
         if (isFoodItem(item, database)){
+            let capitalRegex = /^[A-Z]+$/
+            if(capitalRegex.test(item)){
             foodItems.push(item)
+            }
         }
     }
 
