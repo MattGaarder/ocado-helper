@@ -1,3 +1,11 @@
+fetch('database/openfoodfacts.json')
+    .then(response => response.json())
+    .then(data => {
+        const ingredientNames = data.tags.map(tag => tag.name); 
+        console.log(ingredientNames) // Now data is a JavaScript object representing the JSON
+    })
+    .catch(error => console.error('Error:', error));
+
 /**
  * @param {Integer} pageNum Specifies the number of the page 
  * @param {PDFDocument} PDFDocumentInstance The PDF document obtained 
@@ -12,7 +20,7 @@ function getPageText(pageNum, PDFDocumentInstance) {
                 var finalString = "";
                 // Concatenate the string of the item to the final string
                 for (var i = 0; i < textItems.length; i++) {
-                    console.log(textItems[i])
+                    // console.log(textItems[i])
                     var item = textItems[i];
                     finalString += item.str + " ";
                 }
@@ -50,16 +58,15 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'public/pdf.worker.js'; // set path to 
 
 
 function cleanText(rawText) {
-    var lines = rawText.split(' '); // split by newline
+    var lines = rawText.split(' ');
     var items = [];
-    var pricePattern = /^\d+\.\d+/; // regex for a number with a decimal point
+    // var pricePattern = /^\d+\.\d+/; 
+    // regex for a number with a decimal point
     
     for (var i = 0; i < lines.length; i++) {
         var line = lines[i];
         // Check if the line is preceded by a price
-        if (pricePattern.test(line)) {
-            items.push(lines[i + 2]);
-        }
+        items.push(line);
     }
     return items;
 }
@@ -72,9 +79,9 @@ pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
     // Extract the text
     getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
         // Clean the text of the page
-        var cleanedText = cleanText(textPage);
+        var splitText = cleanText(textPage);
         // Use the cleaned text in your application
-        console.log(cleanedText);
+        console.log(splitText);
     });
 
 }, function (reason) {
