@@ -48,7 +48,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'public/pdf.worker.js'; // set path to 
             // https://mozilla.github.io/pdf.js/examples/
             // https://ourcodeworld.com/articles/read/405/how-to-convert-pdf-to-text-extract-text-from-pdf-with-javascript#disqus_thread
 
-let ingredientNames = [];            
+let ingredientNames = [];
+let adjectiveFoods = ["MUSHROOM", "CHEESE", "STEAK", "JUICE", "LEAF", "SAUCE", "NOODLE", "BUTTER", "CREAM", "NUT", "RICE", "ONION"]        
+let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA"]
 
 fetch('database/openfoodfacts.json')
     .then(response => response.json())
@@ -63,7 +65,7 @@ fetch('database/openfoodfacts.json')
             // Extract the text
             getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
                 // Clean the text of the page
-                var splitText = cleanText(textPage, ingredientNames);
+                cleanText(textPage, ingredientNames);
                 // Use the cleaned text in your application
 
             });
@@ -88,24 +90,33 @@ function isFoodItem(item, database) {
 
 
 function cleanText(rawText, database) {
-    var lines = rawText.split(' ');
-    var items = [];
+    let lines = rawText.split(' ');
+    let items = [];
     let foodItems = [];
-    // var pricePattern = /^\d+\.\d+/; 
-    // regex for a number with a decimal point
+    let blockedItems = new Set();
+
+    let pluralRegex = /[S]$/
+    let capitalRegex = /^[A-Z]+$/
     
     for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        let pluralRegex = /[S]$/
+        let line = lines[i];
+        items.push(line);
         if(pluralRegex.test(line)){
             line = line.slice(0, -1);
         }
-        items.push(line);
+        if(adjectiveFoods.includes(line)){
+            addItemIfUnique(foodItems, lines[i - 1] + " " + lines[i]);
+            blockedItems.add(lines[i]);
+            continue;
+        }
+        if(prefixFoods.includes(line)){
+            addItemIfUnique(foodItems, lines[i] + " " + lines[i + 1]);
+            blockedItems.add(lines[i + 1]);
+        }
     }
 
     for (const item of items){
-        if (isFoodItem(item, database)){
-            let capitalRegex = /^[A-Z]+$/
+        if (isFoodItem(item, database) && !blockedItems.has(item)){
             if(capitalRegex.test(item)){
             foodItems.push(item)
             }
@@ -117,7 +128,11 @@ function cleanText(rawText, database) {
 }
 
 
-
+function addItemIfUnique(array, newItem) {
+    if (!array.includes(newItem)) {
+        array.push(newItem);
+    }
+}
 
 
 
