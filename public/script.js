@@ -100,28 +100,34 @@ function cleanText(rawText, database) {
     
     for (var i = 0; i < lines.length; i++) {
         let line = lines[i];
-        items.push(line);
-        if(pluralRegex.test(line)){
-            line = line.slice(0, -1);
-        }
+        console.log(line)
         if(adjectiveFoods.includes(line)){
             addItemIfUnique(foodItems, lines[i - 1] + " " + lines[i]);
             blockedItems.add(lines[i]);
+            blockedItems.add(lines[i - 1]);
+            blockedItems.add(lines[i - 1] + " " + lines[i]);
             continue;
         }
         if(prefixFoods.includes(line)){
             addItemIfUnique(foodItems, lines[i] + " " + lines[i + 1]);
+            blockedItems.add(lines[i]);
             blockedItems.add(lines[i + 1]);
+            blockedItems.add(lines[i] + " " + lines[i + 1]);
         }
+        if(pluralRegex.test(line)){
+            line = line.slice(0, -1);
+        }
+        items.push(line);
     }
-
+    
     for (const item of items){
         if (isFoodItem(item, database) && !blockedItems.has(item)){
             if(capitalRegex.test(item)){
-            foodItems.push(item)
+                foodItems.push(item)
             }
         }
     }
+    console.log(blockedItems)
 
     console.log(foodItems)
     return items;
