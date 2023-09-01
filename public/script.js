@@ -49,8 +49,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'public/pdf.worker.js'; // set path to 
             // https://ourcodeworld.com/articles/read/405/how-to-convert-pdf-to-text-extract-text-from-pdf-with-javascript#disqus_thread
 
 let ingredientNames = [];
-let adjectiveFoods = ["MUSHROOM", "CHEESE", "STEAK", "JUICE", "LEAF", "SAUCE", "NOODLE", "BUTTER", "CREAM", "NUT", "RICE", "ONION"]        
-let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA"]
+let adjectiveFoods = ["MUSHROOMS", "CHEESE", "STEAKS", "JUICE", "LEAF", "SAUCE", "NOODLES", "BUTTER", "CREAM", "NUTS", "RICE", "ONIONS", "TOMATOES", "CRISPS", "YOGHURT"]        
+let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA", "CHOCOLATE"]
 
 fetch('database/openfoodfacts.json')
     .then(response => response.json())
@@ -114,14 +114,16 @@ function cleanText(rawText, database) {
             blockedItems.add(lines[i + 1]);
             blockedItems.add(lines[i] + " " + lines[i + 1]);
         }
-        if(pluralRegex.test(line)){
-            line = line.slice(0, -1);
-        }
+        // if(pluralRegex.test(line)){
+        //     line = line.slice(0, -1);
+        // }
         items.push(line);
     }
     
     for (const item of items){
-        if (isFoodItem(item, database) && !blockedItems.has(item)){
+        const singularItem = pluralRegex.test(item) ? item.slice(0, -1) : item;
+
+        if (isFoodItem(singularItem, database) && !blockedItems.has(item)){
             if(capitalRegex.test(item)){
                 foodItems.push(item)
             }
