@@ -49,7 +49,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'public/pdf.worker.js'; // set path to 
             // https://ourcodeworld.com/articles/read/405/how-to-convert-pdf-to-text-extract-text-from-pdf-with-javascript#disqus_thread
 
 let ingredientNames = [];
-let adjectiveFoods = ["MUSHROOMS", "CHEESE", "STEAKS", "JUICE", "LEAF", "SAUCE", "NOODLES", "BUTTER", "CREAM", "NUTS", "RICE", "ONIONS", "TOMATOES", "CRISPS", "YOGHURT"]        
+let adjectiveFoods = ["MUSHROOMS", "CHEESE", "STEAKS", "JUICE", "LEAF", "SAUCE", "NOODLES", "BUTTER", "CREAM", "NUTS", "RICE", "ONIONS", "CRISPS", "YOGHURT"]        
 let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA", "CHOCOLATE"]
 
 fetch('database/openfoodfacts.json')
@@ -95,7 +95,8 @@ function cleanText(rawText, database) {
     let foodItems = [];
     let blockedItems = new Set();
 
-    let pluralRegex = /[S]$/
+    let pluralRegex = /(ES|S)$/;
+    let pluralRegexTwo = /S$/;
     let capitalRegex = /^[A-Z]+$/
     
     for (var i = 0; i < lines.length; i++) {
@@ -117,15 +118,43 @@ function cleanText(rawText, database) {
         // if(pluralRegex.test(line)){
         //     line = line.slice(0, -1);
         // }
+        // let singularItem = line;
+        // const match = line.match(pluralRegex);
+        // if (match) {
+        //     singularItem = line.slice(0, -match[0].length);
+        // }
+
         items.push(line);
     }
     
     for (const item of items){
-        const singularItem = pluralRegex.test(item) ? item.slice(0, -1) : item;
+        // const singularItem = pluralRegex.test(item) ? item.slice(0, -1) : item;
+        if (isFoodItem(item, database) && !blockedItems.has(item)){
+            if(capitalRegex.test(item)){
+                foodItems.push(item)
+                blockedItems.add(item)
+            }
+        }
+
+        const singularItemTwo = pluralRegexTwo.test(item) ? item.slice(0, -1) : item;
+
+        if (isFoodItem(singularItemTwo, database) && !blockedItems.has(item)){
+            if(capitalRegex.test(item)){
+                foodItems.push(item)
+                blockedItems.add(item)
+            }
+        }
+
+        
+
+
+        const match = item.match(pluralRegex);
+        const singularItem = match ? item.slice(0, -match[0].length) : item;
 
         if (isFoodItem(singularItem, database) && !blockedItems.has(item)){
             if(capitalRegex.test(item)){
                 foodItems.push(item)
+                blockedItems.add(item)
             }
         }
     }
