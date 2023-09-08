@@ -24,9 +24,9 @@ function getPageText(pageNum, PDFDocumentInstance) {
     });
 }
 
-var PDF_URL  = 'assets/receipt-3333162999.pdf';
+var PDF_URL  = './receipt-3333162999.pdf';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'public/pdf.worker.js'; // set path to pdf.worker.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js'; // set path to pdf.worker.js
 
 // pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
     
@@ -52,7 +52,7 @@ let ingredientNames = [];
 let adjectiveFoods = ["MUSHROOMS", "CHEESE", "STEAKS", "JUICE", "LEAF", "SAUCE", "NOODLES", "BUTTER", "CREAM", "NUTS", "RICE", "ONIONS", "CRISPS", "YOGHURT"]        
 let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA", "CHOCOLATE"]
 
-fetch('database/openfoodfacts.json')
+fetch('../database/openfoodfacts.json')
     .then(response => response.json())
     .then(data => {
         ingredientNames = data.tags.map(tag => tag.name); 
