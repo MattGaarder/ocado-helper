@@ -3,8 +3,8 @@ const asyncWrapper = require('../middleware/async');
 
 
 const getAllIngredients = asyncWrapper(async (req, res, next) => {
-    const tasks = await Ingredient.find({});
-    res.status(200).json({ tasks });
+    const ingredients = await Ingredient.find({});
+    res.status(200).json({ ingredients });
 });
 
 const deleteIngredient = asyncWrapper(async (req, res, next) => {

@@ -1,4 +1,3 @@
-
 /**
  * @param {Integer} pageNum Specifies the number of the page 
  * @param {PDFDocument} PDFDocumentInstance The PDF document obtained 
@@ -25,7 +24,6 @@ function getPageText(pageNum, PDFDocumentInstance) {
 }
 
 var PDF_URL  = './receipt-3333162999.pdf';
-
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js'; // set path to pdf.worker.js
 
 // pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
@@ -55,21 +53,16 @@ let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA", "CHOCOLATE"]
 fetch('./openfoodfacts.json')
     .then(response => response.json())
     .then(data => {
-        ingredientNames = data.tags.map(tag => tag.name); 
-        console.log(ingredientNames); // Now data is a JavaScript object representing the JSON
+        databaseIngredients = data.tags.map(tag => tag.name); 
         pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
-    
             var totalPages = PDFDocumentInstance.numPages;
             var pageNumber = 1;
-        
             // Extract the text
             getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
                 // Clean the text of the page
-                cleanText(textPage, ingredientNames);
+                cleanText(textPage, databaseIngredients);
                 // Use the cleaned text in your application
-
             });
-        
         }, function (reason) {
             // PDF loading error
             console.error(reason);
@@ -79,7 +72,6 @@ fetch('./openfoodfacts.json')
     
 
 function isFoodItem(item, database) {
-    // Replace with actual database query logic
     const lowerItem = item.toLowerCase();
     return database.some(dbItem => dbItem.toLowerCase() === lowerItem);
 }
@@ -88,88 +80,88 @@ function isFoodItem(item, database) {
 // Note that I used Array.prototype.some() instead of Array.prototype.includes() because some allows you to specify a function to test each element,
 // giving you the ability to control the case of the strings you're comparing.
 
-
-function cleanText(rawText, database) {
-    let lines = rawText.split(' ');
+function cleanText(pdfText, openFoodDatabase) {
+    let finalIngredients = [];
+    let splitPdfText = pdfText.split(' ');
     let items = [];
-    let foodItems = [];
     let blockedItems = new Set();
-
     let pluralRegex = /(ES|S)$/;
     let pluralRegexTwo = /S$/;
     let capitalRegex = /^[A-Z]+$/
-    
-    for (var i = 0; i < lines.length; i++) {
-        let line = lines[i];
-        console.log(line)
-        if(adjectiveFoods.includes(line)){
-            addItemIfUnique(foodItems, lines[i - 1] + " " + lines[i]);
-            blockedItems.add(lines[i]);
-            blockedItems.add(lines[i - 1]);
-            blockedItems.add(lines[i - 1] + " " + lines[i]);
+    // Check if there are ingredients in the PDF that need to be added with more context - e.g. "chicken + thighs"
+    // If there are, add them as a pair, and then add them to blockedItems so that when we cross reference the database later they are not added twice
+    for (var i = 0; i < splitPdfText.length; i++) {
+        let splitPdfTextWord = splitPdfText[i];
+        if(adjectiveFoods.includes(splitPdfTextWord)){
+            addItemIfUnique(finalIngredients, splitPdfText[i - 1] + " " + splitPdfText[i]);
+            blockedItems.add(splitPdfText[i]);
+            blockedItems.add(splitPdfText[i - 1]);
+            blockedItems.add(splitPdfText[i - 1] + " " + splitPdfText[i]);
             continue;
         }
-        if(prefixFoods.includes(line)){
-            addItemIfUnique(foodItems, lines[i] + " " + lines[i + 1]);
-            blockedItems.add(lines[i]);
-            blockedItems.add(lines[i + 1]);
-            blockedItems.add(lines[i] + " " + lines[i + 1]);
+        if(prefixFoods.includes(splitPdfTextWord)){
+            addItemIfUnique(finalIngredients, splitPdfText[i] + " " + splitPdfText[i + 1]);
+            blockedItems.add(splitPdfText[i]);
+            blockedItems.add(splitPdfText[i + 1]);
+            blockedItems.add(splitPdfText[i] + " " + splitPdfText[i + 1]);
         }
-        // if(pluralRegex.test(line)){
-        //     line = line.slice(0, -1);
-        // }
-        // let singularItem = line;
-        // const match = line.match(pluralRegex);
-        // if (match) {
-        //     singularItem = line.slice(0, -match[0].length);
-        // }
-
-        items.push(line);
+        items.push(splitPdfTextWord); // add all words from the pdf to items
     }
-    
-    for (const item of items){
-        // const singularItem = pluralRegex.test(item) ? item.slice(0, -1) : item;
-        if (isFoodItem(item, database) && !blockedItems.has(item)){
+    for (const item of items){ // go through pdf words again
+        if (isFoodItem(item, openFoodDatabase) && !blockedItems.has(item)){ // if the word is in the data base, and is not in blocked items
+            if(capitalRegex.test(item)){ // and is not capitalised 
+                finalIngredients.push(item) // add it to final data set 
+                blockedItems.add(item) // when it is added to the data set, add it to the blocked items also
+            }
+        }
+        const singularItemTwo = pluralRegexTwo.test(item) ? item.slice(0, -1) : item; // if the item is plural (ends with s)? Remove the s 
+        if (isFoodItem(singularItemTwo, openFoodDatabase) && !blockedItems.has(item)){ // check this new item against the openfood database
             if(capitalRegex.test(item)){
-                foodItems.push(item)
+                finalIngredients.push(item) // add it to the final data set 
                 blockedItems.add(item)
             }
         }
-
-        const singularItemTwo = pluralRegexTwo.test(item) ? item.slice(0, -1) : item;
-
-        if (isFoodItem(singularItemTwo, database) && !blockedItems.has(item)){
-            if(capitalRegex.test(item)){
-                foodItems.push(item)
-                blockedItems.add(item)
-            }
-        }
-
-        
-
-
         const match = item.match(pluralRegex);
-        const singularItem = match ? item.slice(0, -match[0].length) : item;
-
-        if (isFoodItem(singularItem, database) && !blockedItems.has(item)){
+        const singularItem = match ? item.slice(0, -match[0].length) : item; // do the same with es 
+        if (isFoodItem(singularItem, openFoodDatabase) && !blockedItems.has(item)){
             if(capitalRegex.test(item)){
-                foodItems.push(item)
+                finalIngredients.push(item)
                 blockedItems.add(item)
             }
         }
     }
-    console.log(blockedItems)
+    console.log(finalIngredients)
+    let ingredientsObjectArray = finalIngredients.map(ingredient => {
+            return {
+            name: ingredient,
+        }
+    });
+    console.log(ingredientsObjectArray)
+    makeStuffFromIngredientsArray(ingredientsObjectArray)
+    return ingredientsObjectArray;
+    
+};
 
-    console.log(foodItems)
-    return items;
+const ingredientsDOM = document.querySelector('.ingredients')
+
+function makeStuffFromIngredientsArray(ingredientsObjectArray){
+    const allIngredients = ingredientsObjectArray.map((ingredient) => {
+        console.log(ingredient)
+        return `<div className="single-ingredient"><h5>${ingredient.name}</h5></div>`
+    }).join('');
+    ingredientsDOM.innerHTML = allIngredients;
 }
-
 
 function addItemIfUnique(array, newItem) {
     if (!array.includes(newItem)) {
         array.push(newItem);
     }
-}
+};
+
+
+// I need to make finalIngredients an array of ingredient objects
+
+
 
 
 
