@@ -5,7 +5,7 @@ const IngredientSchema = new mongoose.Schema({
         type: String,
         required: [true, 'must provide ingredient'],
         trim: true,
-        minlength: [2, 'ingredient cannot be less than 3 characters']
+        minlength: [4, 'ingredient cannot be less than 3 characters']
     }
 });
 

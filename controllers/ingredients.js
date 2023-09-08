@@ -23,6 +23,14 @@ const updateIngredient = asyncWrapper(async (req, res, next) => {
         return res.status(404).json({msg: `No ingredient with id: ${ingredientID}`}); // beware this line
     }
     res.status(200).json({ ingredient });
+});
+
+const addIngredients = asyncWrapper(async (req, res, next) => {
+    const ingredients = req.body.ingredients;
+    console.log(ingredients);
+    const ingredientObjects = ingredients.map(name => ({ name }));
+    const insertedIngredients = await Ingredient.insertMany(ingredientObjects);
+    res.status(200).json({ ingredients: insertedIngredients });
 })
 
-module.exports = { getAllIngredients, deleteIngredient, updateIngredient }
+module.exports = { getAllIngredients, deleteIngredient, updateIngredient, addIngredients }

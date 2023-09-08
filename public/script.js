@@ -142,12 +142,13 @@ function cleanText(pdfText, openFoodDatabase) {
     
 };
 
-const ingredientsDOM = document.querySelector('.ingredients')
+const ingredientsDOM = document.querySelector('.ingredientsList');
+const submitButton = document.querySelector('submit-btn');
 
 function makeStuffFromIngredientsArray(ingredientsObjectArray){
-    const allIngredients = ingredientsObjectArray.map((ingredient) => {
+    const allIngredients = ingredientsObjectArray.map((ingredient, index) => {
         console.log(ingredient)
-        return `<div className="single-ingredient"><h5>${ingredient.name}</h5></div>`
+        return `<label><input type="checkbox" name="ingredient${index}" value="${ingredient.name}">${ingredient.name}</label><br>`
     }).join('');
     ingredientsDOM.innerHTML = allIngredients;
 }
@@ -157,6 +158,25 @@ function addItemIfUnique(array, newItem) {
         array.push(newItem);
     }
 };
+
+document.getElementById("ingredientsForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const selectedIngredients = [];
+
+    // Loop through formData to get selected (checked) ingredients
+    for (let [key, value] of formData) {
+        selectedIngredients.push(value);
+    }
+
+    // Now, you can send selectedIngredients to MongoDB
+    try {
+        await axios.post('/api/v1/ingredients', { ingredients: selectedIngredients });
+        // Success handling
+    } catch (error) {
+        // Error handling
+    }
+});
 
 
 // I need to make finalIngredients an array of ingredient objects
