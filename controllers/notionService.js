@@ -1,12 +1,14 @@
 const asyncWrapper = require('../middleware/async');
-const { Client } = require('@notionhq/client');
+
 const myMongooseModel = require('../models/Ingredient'); 
+
+
+const { Client } = require('@notionhq/client');
 
 const notion = new Client({
     auth: process.env.NOTION_API_KEY
 });
-
-
+console.log("API Token: ", process.env.NOTION_API_KEY);
 const getData = asyncWrapper(async(req, res) => {
     const mongoData = await myMongooseModel.find({});
     if (!mongoData) {
