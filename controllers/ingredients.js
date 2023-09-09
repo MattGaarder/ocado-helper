@@ -27,8 +27,8 @@ const updateIngredient = asyncWrapper(async (req, res, next) => {
 
 const addIngredients = asyncWrapper(async (req, res, next) => {
     const ingredients = req.body.ingredients;
-    console.log(ingredients);
-    const ingredientObjects = ingredients.map(name => ({ name }));
+    console.log("console logging ingredients on line 30 ", ingredients);
+    const ingredientObjects = ingredients.map(ingredient => ({ name: ingredient }));
     // name => { // can also be written as 
     //     return { name: name };
     //   }
