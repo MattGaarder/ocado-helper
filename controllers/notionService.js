@@ -15,14 +15,27 @@ const getData = asyncWrapper(async(req, res) => {
         return res.status(404).json({ error: 'Data not found in MongoDB' });
     }
     console.log("this is mongoData logged in notionService on line 15: ", mongoData);
-    const notionData = await notion.databases.create({
-    parent: {
-            database_id: "your-notion-database-id",  // Replace with your Notion database ID
-        },
-        properties: {
-            // ... fill in with the actual properties you want to set
-        }
-    });
+    for(let data of mongoData){
+        console.log("logging data.name when iterating through data of mondoData in notionService", data.name);
+        const notionData = await notion.pages.create({
+        "parent": {
+                "type": "database_id",  // Replace with your Notion database ID
+                "database_id": process.env.NOTION_DATABASE_ID
+            },
+            "properties": {
+                "Name": {
+                    "title": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": data.name,
+                            }
+                        }
+                    ]
+                }
+            }
+        });
+    }
 
     res.status(200).json({ mongoData, notionData });
 
