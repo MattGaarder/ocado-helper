@@ -1,3 +1,5 @@
+let PDF_URL  = null;
+
 document.getElementById("pdfForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const formData = new FormData(event.target);
@@ -8,10 +10,35 @@ document.getElementById("pdfForm").addEventListener("submit", (event) => {
         }
     }).then(response => {
         console.log('File uploaded successfully');
+        console.log(response.data);
+        PDF_URL = `http://localhost:3001/${response.data.filePath}`
+
+
+        
     }).catch(error => {
         console.log('Error uploading file', error);
     })
 });
+
+fetch('./openfoodfacts.json')
+    .then(response => response.json())
+    .then(data => {
+        databaseIngredients = data.tags.map(tag => tag.name); 
+        pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
+            var totalPages = PDFDocumentInstance.numPages;
+            var pageNumber = 1;
+            // Extract the text
+            getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
+                // Clean the text of the page
+                cleanText(textPage, databaseIngredients);
+                // Use the cleaned text in your application
+            });
+        }, function (reason) {
+            // PDF loading error
+            console.error(reason);
+        });
+    })
+    .catch(error => console.error('Error:', error));
 
 
 
@@ -40,7 +67,6 @@ function getPageText(pageNum, PDFDocumentInstance) {
     });
 }
 
-var PDF_URL  = './receipt-3333162999.pdf';
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js'; // set path to pdf.worker.js
 
 // pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
@@ -64,28 +90,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js'; // set path to pdf.w
             // https://ourcodeworld.com/articles/read/405/how-to-convert-pdf-to-text-extract-text-from-pdf-with-javascript#disqus_thread
 
 let ingredientNames = [];
-let adjectiveFoods = ["MUSHROOMS", "CHEESE", "STEAKS", "JUICE", "LEAF", "SAUCE", "NOODLES", "BUTTER", "CREAM", "NUTS", "RICE", "ONIONS", "CRISPS", "YOGHURT"]        
-let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA", "CHOCOLATE"]
+let adjectiveFoods = ["MUSHROOMS", "CHEESE", "STEAKS", "JUICE", "LEAF", "SAUCE", "NOODLES", "BUTTER", "CREAM", "NUTS", "RICE", "ONIONS", "CRISPS", "YOGHURT"];        
+let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA", "CHOCOLATE"];
 
-fetch('./openfoodfacts.json')
-    .then(response => response.json())
-    .then(data => {
-        databaseIngredients = data.tags.map(tag => tag.name); 
-        pdfjsLib.getDocument(PDF_URL).promise.then(function (PDFDocumentInstance) {
-            var totalPages = PDFDocumentInstance.numPages;
-            var pageNumber = 1;
-            // Extract the text
-            getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
-                // Clean the text of the page
-                cleanText(textPage, databaseIngredients);
-                // Use the cleaned text in your application
-            });
-        }, function (reason) {
-            // PDF loading error
-            console.error(reason);
-        });
-    })
-    .catch(error => console.error('Error:', error));
     
 
 function isFoodItem(item, database) {

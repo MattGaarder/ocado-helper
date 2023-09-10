@@ -19,6 +19,7 @@ const connectDB = require('./database/mongoConnect');
 
 
 app.use(express.static('./public')); 
+app.use('/uploads', express.static('uploads'));
 app.use(express.json());
 
 // console.log("API Token: ", process.env.NOTION_API_KEY);
@@ -33,7 +34,7 @@ app.post('/uploads', upload.single('pdf'), (req, res, next) => {
     if(!file) {
         return res.status(400).send('Please upload a file');
     }
-    res.status(200).send('File uploaded successfully');
+    res.status(200).send('File uploaded successfully ', { filePath: filePath });
 })
 
 const start = async() => {
