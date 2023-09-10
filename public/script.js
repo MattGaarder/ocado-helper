@@ -1,3 +1,19 @@
+document.getElementById("pdfForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+
+    axios.post('http://localhost:3001/uploads', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    }).then(response => {
+        console.log('File uploaded successfully');
+    }).catch(error => {
+        console.log('Error uploading file', error);
+    })
+});
+
+
 
 /**
  * @param {Integer} pageNum Specifies the number of the page 
@@ -171,8 +187,10 @@ document.getElementById("ingredientsForm").addEventListener("submit", async func
     }
 
     // Now, you can send selectedIngredients to MongoDB
+    // And then get that data from Mongo
     try {
         await axios.post('/api/v1/ingredients', { ingredients: selectedIngredients });
+        await axios.get('/api/v1/notion');
         // Success handling
     } catch (error) {
         // Error handling

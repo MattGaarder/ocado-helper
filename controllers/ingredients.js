@@ -27,14 +27,10 @@ const updateIngredient = asyncWrapper(async (req, res, next) => {
 
 const addIngredients = asyncWrapper(async (req, res, next) => {
     const ingredients = req.body.ingredients;
-    console.log("console logging ingredients on line 30 ", ingredients);
+    // console.log("console logging ingredients on line 30 ", ingredients);
     const ingredientObjects = ingredients.map(ingredient => ({ name: ingredient }));
-    // name => { // can also be written as 
-    //     return { name: name };
-    //   }
-    console.log(ingredientObjects)
     const insertedIngredients = await Ingredient.insertMany(ingredientObjects);
     res.status(200).json({ ingredients: insertedIngredients });
-})
+});
 
 module.exports = { getAllIngredients, deleteIngredient, updateIngredient, addIngredients }

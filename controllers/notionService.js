@@ -8,13 +8,16 @@ const { Client } = require('@notionhq/client');
 const notion = new Client({
     auth: process.env.NOTION_API_KEY
 });
-console.log("API Token: ", process.env.NOTION_API_KEY);
+
+// console.log("API Token: ", process.env.NOTION_API_KEY);
+
 const getData = asyncWrapper(async(req, res) => {
     const mongoData = await myMongooseModel.find({});
     if (!mongoData) {
         return res.status(404).json({ error: 'Data not found in MongoDB' });
     }
-    console.log("this is mongoData logged in notionService on line 15: ", mongoData);
+    // console.log("this is mongoData logged in notionService on line 15: ", mongoData);
+    const createdRows = [];
     for(let data of mongoData){
         console.log("logging data.name when iterating through data of mondoData in notionService", data.name);
         const notionData = await notion.pages.create({
@@ -35,9 +38,10 @@ const getData = asyncWrapper(async(req, res) => {
                 }
             }
         });
+        createdRows.push(notionData)
     }
 
-    res.status(200).json({ mongoData, notionData });
+    res.status(200).json({ mongoData, createdRows });
 
 });
 
