@@ -54,7 +54,7 @@ const getData = asyncWrapper(async(req, res) => {
     // console.log("this is mongoData logged in notionService on line 15: ", mongoData);
     const createdRows = [];
     for(let data of mongoData){
-        console.log("logging data.name when iterating through data of mondoData in notionService", data.name);
+        console.log("logging data.name when iterating through data of mondoData in notionService", data);
         const notionData = await notion.pages.create({
             "parent": {
                 "type": "database_id",  // Replace with your Notion database ID
@@ -70,7 +70,17 @@ const getData = asyncWrapper(async(req, res) => {
                             }
                         }
                     ]
-                }
+                },
+                "MONGO_ID": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": data._id.toString(),
+                            }
+                        }
+                    ]
+                },                 
             }
         });
         createdRows.push(notionData)
