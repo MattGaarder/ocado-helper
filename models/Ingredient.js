@@ -6,6 +6,9 @@ const IngredientSchema = new mongoose.Schema({
         required: [true, 'must provide ingredient'],
         trim: true,
         minlength: [4, 'ingredient cannot be less than 3 characters']
+    },
+    notionID: {
+        type: String,
     }
 });
 

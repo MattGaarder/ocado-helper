@@ -1,3 +1,5 @@
+const { addNotionIDToMongoEntryVariable } = require('./ingredients')
+
 const asyncWrapper = require('../middleware/async');
 const axios = require('axios');
 
@@ -84,10 +86,12 @@ const getData = asyncWrapper(async(req, res) => {
             }
         });
         createdRows.push(notionData)
+        
     }
-
+    console.log("skipittytoilet:: ", createdRows[0].properties.MONGO_ID.rich_text[0].plain_text);
+    console.log("itsabwoodapp:: ", createdRows[0].id);
+    addNotionIDToMongoEntryVariable(createdRows);
     res.status(200).json({ mongoData, createdRows });
-
 });
 
 const updateData = asyncWrapper(async(req, res) => {
