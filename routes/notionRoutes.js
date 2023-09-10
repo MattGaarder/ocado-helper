@@ -1,10 +1,26 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 
-const { getData, updateData } = require('../controllers/notionService');
+const { getData, updateData, getDataBase, getIds } = require('../controllers/notionService');
 
 router.route('/').get(getData);
 router.route('/:id').patch(updateData);
+router.route('/database').get(getDataBase);
+// router.post('/getIds', async(req, res) => {
+//     const data = await getIds(process.env.NOTION_DATABASE_ID, process.env.NOTION_API_KEY);
+//     res.json(data);
+// });
+router.post('/getIds', async (req, res, next) => {
+    try {
+        const databaseId = req.body.databaseId || process.env.NOTION_DATABASE_ID;
+        const authToken = req.body.authToken || process.env.NOTION_API_KEY;
+        const data = await getIds(databaseId, authToken);
+        res.status(200).json(data);
+    } catch (error) {
+        next(error);
+    }
+});
 
 module.exports = router;
 

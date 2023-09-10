@@ -1,4 +1,5 @@
 const asyncWrapper = require('../middleware/async');
+const axios = require('axios');
 
 const myMongooseModel = require('../models/Ingredient'); 
 
@@ -11,7 +12,41 @@ const notion = new Client({
 
 // console.log("API Token: ", process.env.NOTION_API_KEY);
 
+const getDataBase = asyncWrapper(async(req, res) => {
+    const notionDatabase = await notion.databases.retrieve({
+        "database_id": process.env.NOTION_DATABASE_ID
+    })
+    // console.log(notionDatabase);
+    res.status(200).json(notionDatabase);
+});
+
+// const getIds = asyncWrapper(async(req, res, next) => {
+//     const databaseId = req.body.databaseId;
+//     const authToken = req.body.authToken;
+//     const response = await axios.post(`https://api.notion.com/v1/databases/${databaseId}/query`,{}, {
+//         headers: {
+//             "Authorization": `Bearer ${authToken}`,
+//             "Notion-Version": "2022-06-28"
+//           }
+//     });
+//     console.log(response.data);
+//     res.status(200).json(response.data);
+// });
+
+const getIds = async (databaseId, authToken) => {
+    const response = await axios.post(`https://api.notion.com/v1/databases/${databaseId}/query`,{}, {
+        headers: {
+            "Authorization": `Bearer ${authToken}`,
+            "Notion-Version": "2022-06-28"
+        }
+    });
+    return response.data;
+};
+
+// I also added an empty object {} as the second argument to axios.post(). This serves as the request payload, which you don't seem to be using in this request.
+
 const getData = asyncWrapper(async(req, res) => {
+    // console.log(notion);
     const mongoData = await myMongooseModel.find({});
     if (!mongoData) {
         return res.status(404).json({ error: 'Data not found in MongoDB' });
@@ -21,7 +56,7 @@ const getData = asyncWrapper(async(req, res) => {
     for(let data of mongoData){
         console.log("logging data.name when iterating through data of mondoData in notionService", data.name);
         const notionData = await notion.pages.create({
-        "parent": {
+            "parent": {
                 "type": "database_id",  // Replace with your Notion database ID
                 "database_id": process.env.NOTION_DATABASE_ID
             },
@@ -51,7 +86,7 @@ const updateData = asyncWrapper(async(req, res) => {
 
 });
 
-module.exports = { getData, updateData }
+module.exports = { getData, updateData, getDataBase, getIds }
 
 
 // // yourController.js

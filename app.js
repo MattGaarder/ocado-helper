@@ -11,6 +11,7 @@ app.use(cors());
 
 const ingredients = require('./routes/ingredients');
 const notionRoutes = require('./routes/notionRoutes');
+// const notionAPIRouter = require('./routes/notionAPIRoutes');
 
 const connectDB = require('./database/mongoConnect');
 // const notion = require('./database/notionConnect');
@@ -26,6 +27,7 @@ app.use(express.json());
 
 app.use('/api/v1/ingredients', ingredients);
 app.use('/api/v1/notion', notionRoutes);
+// app.use('/api/v1/notion', notionAPIRouter);
 
 
 
