@@ -1,3 +1,8 @@
+/**
+ * @param {Integer} pageNum Specifies the number of the page 
+ * @param {PDFDocument} PDFDocumentInstance The PDF document obtained 
+**/
+// let PDF_URL  = './receipt-3333162999.pdf';
 let PDF_URL  = null;
 
 document.getElementById("pdfForm").addEventListener("submit", (event) => {
@@ -11,16 +16,8 @@ document.getElementById("pdfForm").addEventListener("submit", (event) => {
     }).then(response => {
         console.log('File uploaded successfully');
         console.log(response.data);
-        PDF_URL = `http://localhost:3001/${response.data.filePath}`
-
-
-        
-    }).catch(error => {
-        console.log('Error uploading file', error);
-    })
-});
-
-fetch('./openfoodfacts.json')
+        PDF_URL = `http://localhost:3001/${response.data.filePath}`;
+        fetch('./openfoodfacts.json')
     .then(response => response.json())
     .then(data => {
         databaseIngredients = data.tags.map(tag => tag.name); 
@@ -39,13 +36,33 @@ fetch('./openfoodfacts.json')
         });
     })
     .catch(error => console.error('Error:', error));
+        // processPDF();    
+    }).catch(error => {
+        console.log('Error uploading file', error);
+    })
+});
 
 
 
-/**
- * @param {Integer} pageNum Specifies the number of the page 
- * @param {PDFDocument} PDFDocumentInstance The PDF document obtained 
-**/
+// async function processPDF() {
+//     try {
+//         const response = await fetch('./openfoodfacts.json');
+//         const data = await response.json();
+//         const databaseIngredients = data.tags.map(tag => tag.name);
+
+//         const PDFDocumentInstance = await pdfjsLib.getDocument(PDF_URL).promise;
+//         const totalPages = PDFDocumentInstance.numPages;
+//         const pageNumber = 1;
+
+//         const textPage = await getPageText(pageNumber, PDFDocumentInstance);
+//         cleanText(textPage, databaseIngredients);
+//     } catch (error) {
+//         console.error('Error:', error);
+//     }
+// }
+
+
+
 function getPageText(pageNum, PDFDocumentInstance) {
     // Return a Promise that is solved once the text of the page is retrieven
     return new Promise(function (resolve, reject) {
