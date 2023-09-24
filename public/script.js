@@ -120,54 +120,92 @@ function isFoodItem(item, database) {
 // This will convert item and each dbItem in database to lowercase before checking for inclusion.
 // Note that I used Array.prototype.some() instead of Array.prototype.includes() because some allows you to specify a function to test each element,
 // giving you the ability to control the case of the strings you're comparing.
-
+// basically I am going to have a variable that will be something like fridgeCupboardFreezerOrNone, this will start off with a value of null
+// when I am iterating through splitPdfText down there, I will make the variable change to fridge, when this word is encountered during the iteration
+// then change to cupboard when encountering cupboard etc. 
+// I then need to make this a property of an object, along with name and date
 function cleanText(pdfText, openFoodDatabase) {
+    let storageLocation = "";
     let finalIngredients = [];
     let splitPdfText = pdfText.split(' ');
     let items = [];
     let blockedItems = new Set();
-    let pluralRegex = /(ES|S)$/;
-    let pluralRegexTwo = /S$/;
+
+    let fridgeRegex = /Fridge/;
+    let cupboardRegex = /Cupboard/;
+    let freezerRegex = /Freezer/;
+    let pluralEs = /(ES|S)$/;
+    let pluralS = /S$/;
     let capitalRegex = /^[A-Z]+$/
     // Check if there are ingredients in the PDF that need to be added with more context - e.g. "chicken + thighs"
-    // If there are, add them as a pair, and then add them to blockedItems so that when we cross reference the database later they are not added twice
-    for (var i = 0; i < splitPdfText.length; i++) {
-        let splitPdfTextWord = splitPdfText[i];
-        if(adjectiveFoods.includes(splitPdfTextWord)){
-            addItemIfUnique(finalIngredients, splitPdfText[i - 1] + " " + splitPdfText[i]);
-            blockedItems.add(splitPdfText[i]);
-            blockedItems.add(splitPdfText[i - 1]);
-            blockedItems.add(splitPdfText[i - 1] + " " + splitPdfText[i]);
-            continue;
+    // If there are, add them as a pair, and then add them to blockedItems so that when we cross reference the database later so they are not added twice
+    // for (var i = 0; i < splitPdfText.length; i++) {
+    //     let splitPdfTextWord = splitPdfText[i];
+    //     if(fridgeRegex.match(splitPdfTextWord)){
+    //         fridgeCupboardFreezerOrNone = "Fridge";
+    //     }
+    //     if(cupboardRegex.match(splitPdfTextWord)){
+    //         fridgeCupboardFreezerOrNone = "Cupboard";
+    //     }
+    //     if(freezerRegex.match(splitPdfTextWord)){
+    //         fridgeCupboardFreezerOrNone = "Freezer";
+    //     }
+    //     if(adjectiveFoods.includes(splitPdfTextWord)){
+    //         addItemIfUnique(finalIngredients, splitPdfText[i - 1] + " " + splitPdfText[i]);
+    //         blockedItems.add(splitPdfText[i]);
+    //         blockedItems.add(splitPdfText[i - 1]);
+    //         blockedItems.add(splitPdfText[i - 1] + " " + splitPdfText[i]);
+    //         continue;
+    //     }
+    //     if(prefixFoods.includes(splitPdfTextWord)){
+    //         addItemIfUnique(finalIngredients, splitPdfText[i] + " " + splitPdfText[i + 1]);
+    //         blockedItems.add(splitPdfText[i]);
+    //         blockedItems.add(splitPdfText[i + 1]);
+    //         blockedItems.add(splitPdfText[i] + " " + splitPdfText[i + 1]);
+    //     }
+    //     items.push({itemName: splitPdfTextWord, location: fridgeCupboardFreezerOrNone}); // add all words from the pdf to items
+    // }
+    let index = 0;
+    for (let word of splitPdfText) {
+        if(fridgeRegex.test(word)) storageLocation = "Fridge";
+        if(cupboardRegex.test(word)) storageLocation = "Cupboard";
+        if(freezerRegex.test(word)) storageLocation = "Freezer";
+        
+        // Consider changing adjectiveFoods and prefixFoods to Set for better performance in includes method.
+        if(adjectiveFoods.includes(word)){
+            const combinedWord = `${splitPdfText[index - 1]} ${word}`;
+            finalIngredients.push({name: combinedWord, location: storageLocation});
+            blockedItems.add(combinedWord);
         }
-        if(prefixFoods.includes(splitPdfTextWord)){
-            addItemIfUnique(finalIngredients, splitPdfText[i] + " " + splitPdfText[i + 1]);
-            blockedItems.add(splitPdfText[i]);
-            blockedItems.add(splitPdfText[i + 1]);
-            blockedItems.add(splitPdfText[i] + " " + splitPdfText[i + 1]);
+        
+        if(prefixFoods.includes(word)){
+            const combinedWord = `${word} ${splitPdfText[index + 1]}`;
+            finalIngredients.push({name: combinedWord, location: storageLocation});
+            blockedItems.add(combinedWord);
         }
-        items.push(splitPdfTextWord); // add all words from the pdf to items
+        index++;
     }
-    for (const item of items){ // go through pdf words again
-        if (isFoodItem(item, openFoodDatabase) && !blockedItems.has(item)){ // if the word is in the data base, and is not in blocked items
-            if(capitalRegex.test(item)){ // and is not capitalised 
-                finalIngredients.push(item) // add it to final data set 
-                blockedItems.add(item) // when it is added to the data set, add it to the blocked items also
+    for (const word of splitPdfText){ // go through pdf words again
+        if(blockedItems.has(word)) continue;
+        if(!capitalRegex.test(word)) continue;
+        if (isFoodItem(word, openFoodDatabase)){ // if the word is in the data base, and is not in blocked items
+                finalIngredients.push({name: word, location: storageLocation}) // add it to final data set 
+                blockedItems.add(word) // when it is added to the data set, add it to the blocked items also
+            
+        }
+        const singularNoS = pluralS.test(word) ? word.slice(0, -1) : word; // if the item is plural (ends with s)? Remove the s 
+        if (isFoodItem(singularNoS, openFoodDatabase) && !blockedItems.has(word)){ // check this new item against the openfood database
+            if(capitalRegex.test(word)){
+                finalIngredients.push({name: word, location: storageLocation}) // add it to the final data set 
+                blockedItems.add(word)
             }
         }
-        const singularItemTwo = pluralRegexTwo.test(item) ? item.slice(0, -1) : item; // if the item is plural (ends with s)? Remove the s 
-        if (isFoodItem(singularItemTwo, openFoodDatabase) && !blockedItems.has(item)){ // check this new item against the openfood database
-            if(capitalRegex.test(item)){
-                finalIngredients.push(item) // add it to the final data set 
-                blockedItems.add(item)
-            }
-        }
-        const match = item.match(pluralRegex);
-        const singularItem = match ? item.slice(0, -match[0].length) : item; // do the same with es 
-        if (isFoodItem(singularItem, openFoodDatabase) && !blockedItems.has(item)){
-            if(capitalRegex.test(item)){
-                finalIngredients.push(item)
-                blockedItems.add(item)
+        const match = word.match(pluralEs);
+        const singularNoEs = match ? word.slice(0, -match[0].length) : word; // do the same with es 
+        if (isFoodItem(singularNoEs, openFoodDatabase) && !blockedItems.has(word)){
+            if(capitalRegex.test(word)){
+                finalIngredients.push({name: word, location: storageLocation})
+                blockedItems.add(word)
             }
         }
     }
@@ -194,11 +232,11 @@ function makeStuffFromIngredientsArray(ingredientsObjectArray){
     ingredientsDOM.innerHTML = allIngredients;
 }
 
-function addItemIfUnique(array, newItem) {
-    if (!array.includes(newItem)) {
-        array.push(newItem);
-    }
-};
+// function addItemIfUnique(array, newItem) {
+//     if (!array.includes(newItem)) {
+//         array.push(newItem);
+//     }
+// };
 
 document.getElementById("ingredientsForm").addEventListener("submit", async function(event) {
     event.preventDefault();
