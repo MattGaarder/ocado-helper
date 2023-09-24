@@ -11,12 +11,9 @@ app.use(cors());
 
 const ingredients = require('./routes/ingredients');
 const notionRoutes = require('./routes/notionRoutes');
-// const notionAPIRouter = require('./routes/notionAPIRoutes');
+
 
 const connectDB = require('./database/mongoConnect');
-// const notion = require('./database/notionConnect');
-
-// console.log(require('dotenv').config());
 
 
 app.use(express.static('./public')); 
@@ -27,7 +24,7 @@ app.use(express.json());
 
 app.use('/api/v1/ingredients', ingredients);
 app.use('/api/v1/notion', notionRoutes);
-// app.use('/api/v1/notion', notionAPIRouter);
+
 
 
 
@@ -53,3 +50,6 @@ const start = async() => {
 };
 
 start();
+// const notion = require('./database/notionConnect');
+
+// console.log(require('dotenv').config());

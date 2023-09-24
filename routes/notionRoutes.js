@@ -2,11 +2,15 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 
-const { getData, updateData, getDataBase, getIds } = require('../controllers/notionService');
 
-router.route('/').get(getData);
+const { createPages, updateData, getDataBase, getIds } = require('../controllers/notionService');
+// const { getMongoData } = require('../controllers/ingredients');
+
+router.route('/').get(createPages);
 router.route('/:id').patch(updateData);
 router.route('/database').get(getDataBase);
+const Ingredient = require('../models/Ingredient');
+
 // router.post('/getIds', async(req, res) => {
 //     const data = await getIds(process.env.NOTION_DATABASE_ID, process.env.NOTION_API_KEY);
 //     res.json(data);
@@ -22,6 +26,26 @@ router.post('/getIds', async (req, res, next) => {
     }
 });
 
+const getMongoData = (async () => {
+    const ingredients = await Ingredient.find({});
+    return ingredients;
+});
+
+router.post('/sync', async (req, res) => {
+    try {
+        const databaseId = req.body.databaseId || process.env.NOTION_DATABASE_ID;
+        const authToken = req.body.authToken || process.env.NOTION_API_KEY;
+        const mongoData = await getMongoData();
+        const notionData = await getIds(databaseId, authToken);
+        console.log(mongoData)
+        // console.log(notionData)
+        res.status(200).send({mongoData, notionData})
+    } catch(error) {
+        console.error(error)
+        res.status(500).send('sync failed')
+    }
+});
+// module.exports = getMongoData;
 module.exports = router;
 
 

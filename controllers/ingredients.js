@@ -7,6 +7,11 @@ const getAllIngredients = asyncWrapper(async (req, res, next) => {
     res.status(200).json({ ingredients });
 });
 
+const getMongoData = asyncWrapper(async () => {
+    const ingredients = await Ingredient.find({});
+    return ingredients;
+});
+
 const deleteIngredient = asyncWrapper(async (req, res, next) => {
     const {id: ingredientID} = req.params;
     const ingredient = await Ingredient.findOneAndDelete( {_id: ingredientID} );
@@ -57,7 +62,7 @@ const addNotionIDToMongoEntryVariable = async function addNotionIDToMongoEntry(n
 }
 
 
-module.exports = { getAllIngredients, deleteIngredient, updateIngredient, addIngredients, addNotionIDToMongoEntryVariable }
+module.exports = { getAllIngredients, deleteIngredient, updateIngredient, addIngredients, addNotionIDToMongoEntryVariable, getMongoData }
 
 
 // the submit button in the webpage will call addIngredients.

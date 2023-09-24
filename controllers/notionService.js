@@ -47,7 +47,15 @@ const getIds = async (databaseId, authToken) => {
 
 // I also added an empty object {} as the second argument to axios.post(). This serves as the request payload, which you don't seem to be using in this request.
 
-const getData = asyncWrapper(async(req, res) => {
+// const getNotionData = asyncWrapper(async() => {
+//     const mongoData = await myMongooseModel.find({});
+//     if (!mongoData) {
+//         throw new Error('data not found');
+//     }
+//     return mongoData;
+// })
+
+const createPages = asyncWrapper(async(req, res) => {
     // console.log(notion);
     const mongoData = await myMongooseModel.find({});
     if (!mongoData) {
@@ -100,7 +108,7 @@ const updateData = asyncWrapper(async(req, res) => {
 
 });
 
-module.exports = { getData, updateData, getDataBase, getIds }
+module.exports = { createPages, updateData, getDataBase, getIds }
 
 
 // // yourController.js
