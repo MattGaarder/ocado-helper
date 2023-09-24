@@ -26,20 +26,51 @@ router.post('/getIds', async (req, res, next) => {
     }
 });
 
+
+// this is going to be a button in notion that when clicked will make a call to my mongo database
+// what I want it to do is go through my notion database, and on each iteration see if there is a corresponding mongo item
+// if there is not, I want the function to update/delete the item from the mongo database, if there is I want it to continue
+// to be more specific. Go through notion database and collect all mongo_IDs in an array
+// then go through the mongo database, if there is a match to one of the items in the mongo_IDs array, continue, if there is not, delete the item
+
 const getMongoData = (async () => {
     const ingredients = await Ingredient.find({});
     return ingredients;
 });
+
+// const deleteIngredient = asyncWrapper(async (req, res, next) => {
+//     const {id: ingredientID} = req.params;
+//     const ingredient = await Ingredient.findOneAndDelete( {_id: ingredientID} );
+//     if(!ingredient){
+//         return res.status(404).json({msg: `No ingredient with id: ${ingredientID}`}); // beware this line
+//     }
+//     res.status(200).json({ ingredient });
+// });
+
+// const deleteIngredient = (async () => {
+//     const ingredient = await Ingredient.findOneAndDelete({ _id: ingredientID});
+    
+// })
+
 
 router.post('/sync', async (req, res) => {
     try {
         const databaseId = req.body.databaseId || process.env.NOTION_DATABASE_ID;
         const authToken = req.body.authToken || process.env.NOTION_API_KEY;
         const mongoData = await getMongoData();
-        const notionData = await getIds(databaseId, authToken);
+        const { results } = await getIds(databaseId, authToken);
+        let notionMongoIds = results.map(result => result.properties.MONGO_ID.rich_text[0].text.content);
+        const notionIdSet = new Set(notionMongoIds);
+        for (const entry of mongoData) {
+            if (!notionIdSet.has(entry._id.toString())) {
+              // If the MongoDB entry's ID does not exist in Notion IDs, delete it.
+              await Ingredient.findOneAndDelete({ _id: entry._id });
+            }
+          }
+
         console.log(mongoData)
         // console.log(notionData)
-        res.status(200).send({mongoData, notionData})
+        res.status(200).send({mongoData, results})
     } catch(error) {
         console.error(error)
         res.status(500).send('sync failed')
