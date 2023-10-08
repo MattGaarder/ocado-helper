@@ -293,7 +293,6 @@ document.getElementById("ingredientsForm").addEventListener("submit", async func
 //         });
 //     });
 // }
-
 // var PDF_URL  = 'assets/receipt-3333162999.pdf';
 
 // pdfjsLib.getDocument(PDF_URL).then(function (PDFDocumentInstance) {
