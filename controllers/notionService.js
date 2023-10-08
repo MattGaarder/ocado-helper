@@ -55,15 +55,33 @@ const getIds = async (databaseId, authToken) => {
 //     return mongoData;
 // })
 
+function getStorageOptionId(locationName, options) {
+    const option = options.find(opt => opt.name === locationName);
+    if (option) return option.id;
+    return null;  // or throw an error if you want stricter checking
+  }
+
 const createPages = asyncWrapper(async(req, res) => {
     // console.log(notion);
     const mongoData = await myMongooseModel.find({});
+    console.log("🚀 ~ file: notionService.js:67 ~ createPages ~ mongoData:", mongoData)
+    
     if (!mongoData) {
         return res.status(404).json({ error: 'Data not found in MongoDB' });
     }
+    const storageOptions = [
+        { id: "zJI|", name: "Missing" },
+        { id: "_gzg", name: "Cupboard" },
+        { id: ":^>^", name: "Frozen" },
+        { id: "rKoC", name: "Fridge" }
+    ];
     // console.log("this is mongoData logged in notionService on line 15: ", mongoData);
     const createdRows = [];
     for(let data of mongoData){
+        const storageOptionId = getStorageOptionId(data.location, storageOptions);
+        console.log("🚀 ~ file: notionService.js:80 ~ createPages ~ data.location:", data.location)
+        console.log("🚀 ~ file: notionService.js:80 ~ createPages ~ storageOptionId:", storageOptionId)
+        
         // console.log("logging data.name when iterating through data of mondoData in notionService", data);
         const notionData = await notion.pages.create({
             "parent": {
@@ -71,13 +89,20 @@ const createPages = asyncWrapper(async(req, res) => {
                 "database_id": process.env.NOTION_DATABASE_ID
             },
             "properties": {
-                "Name": {
+                "Item": {
                     "title": [
                         {
                             "type": "text",
                             "text": {
                                 "content": data.name,
                             }
+                        }
+                    ]
+                },
+                "Storage": {
+                    "multi_select": [
+                        {
+                            "id": storageOptionId
                         }
                     ]
                 },
