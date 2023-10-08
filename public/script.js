@@ -84,6 +84,7 @@ function cleanText(pdfText, openFoodDatabase) {
     let fridgeRegex = /Fridge/;
     let cupboardRegex = /Cupboard/;
     let freezerRegex = /Freezer/;
+    let missingRegex = /Missing/;
     let pluralEs = /(ES|S)$/;
     let pluralS = /S$/;
     let capitalRegex = /^[A-Z]+$/
@@ -93,35 +94,34 @@ function cleanText(pdfText, openFoodDatabase) {
         if(fridgeRegex.test(word)) storageLocation = "Fridge";
         if(cupboardRegex.test(word)) storageLocation = "Cupboard";
         if(freezerRegex.test(word)) storageLocation = "Freezer";
-        let wordObject = {
+        if(missingRegex.test(word)) storageLocation = "Missing";
+        wordObjectArray.push({
             name: word,
             location: storageLocation
-        }
-        wordObjectArray.push(wordObject);
+        });
     }
-    let index = -1;
-    for (const wordObject of wordObjectArray){ // go through pdf words again
-        index++;
+    for (let i = 0; i < wordObjectArray.length; i++) { // go through pdf words again
+        const wordObject = wordObjectArray[i];
         const word = wordObject.name;
-        if(adjectiveFoods.includes(word)){
-            wordObject.name = `${wordObjectArray[index - 1].name} ${word}`;
-            finalIngredients.push(wordObject);
-            blockedItems.add(word);
-        }
-        
-        if(prefixFoods.includes(word)){
-            wordObject.name = `${word} ${wordObjectArray[index + 1].name}`;
-            finalIngredients.push(wordObject);
-            blockedItems.add(word);
-        }
+
         if(blockedItems.has(word)) continue;
-        if(!capitalRegex.test(word)) continue;
-        if (isFoodItem(word, openFoodDatabase)){ // if the word is in the data base, and is not in blocked items
-                finalIngredients.push(wordObject) // add it to final data set 
-                blockedItems.add(word) // when it is added to the data set, add it to the blocked items also 
-        }
+
+        if(adjectiveFoods.includes(word)){
+            const combinedName = `${wordObjectArray[i - 1].name} ${word}`;
+            finalIngredients.push({name: combinedName, location: wordObject.location});
+            // blockedItems.add(word);
+            blockedItems.add(wordObjectArray[i - 1].name);
+        } else if(prefixFoods.includes(word)){
+            const combinedName = `${word} ${wordObjectArray[i + 1].name}`;
+            finalIngredients.push({name: combinedName, location: wordObject.location});
+            // blockedItems.add(word);
+            // blockedItems.add(wordObjectArray[i + 1].name);
+        } else if (isFoodItem(word, openFoodDatabase) && capitalRegex.test(word)){ // if the word is in the data base, and is not in blocked items
+                finalIngredients.push({name: word, location: wordObject.location}) // add it to final data set 
+                // blockedItems.add(word) // when it is added to the data set, add it to the blocked items also 
+        } else {
         const singularNoS = pluralS.test(word) ? word.slice(0, -1) : word; // if the item is plural (ends with s)? Remove the s 
-        if (isFoodItem(singularNoS, openFoodDatabase) && !blockedItems.has(word)){ // check this new item against the openfood database
+        if (isFoodItem(singularNoS, openFoodDatabase) && !blockedItems.has(word) && capitalRegex.test(word)){ // check this new item against the openfood database
             if(capitalRegex.test(word)){
                 finalIngredients.push(wordObject) // add it to the final data set 
                 blockedItems.add(word)
@@ -129,32 +129,44 @@ function cleanText(pdfText, openFoodDatabase) {
         }
         const match = word.match(pluralEs);
         const singularNoEs = match ? word.slice(0, -match[0].length) : word; // do the same with es 
-        if (isFoodItem(singularNoEs, openFoodDatabase) && !blockedItems.has(word)){
+        if (isFoodItem(singularNoEs, openFoodDatabase) && !blockedItems.has(word) && capitalRegex.test(word)){
             if(capitalRegex.test(word)){
                 finalIngredients.push(wordObject)
                 blockedItems.add(word)
             }
         }
+    }
    
     }
     console.log("hey this is a meeee", finalIngredients);
 
-    let ingredientsObjectArray = finalIngredients.map(ingredient => {
-            return {
-            name: ingredient,
-        }
-    });
-    console.log(ingredientsObjectArray)
-    makeStuffFromIngredientsArray(ingredientsObjectArray)
-    return ingredientsObjectArray;
+    // let ingredientsObjectArray = finalIngredients.map(ingredient => {
+    //         return {
+    //         name: ingredient,
+    //     }
+    // });
+    // console.log(ingredientsObjectArray)
+    makeStuffFromIngredientsArray(finalIngredients)
+    return finalIngredients;
     
+};
+
+function removeRedundencies(finalIngredients) {
+    for(let i= 0; i < finalIngredients.length - 1; i++){
+        const nextNameWords = finalIngredients[i + 1].name.split(' ')
+        if(nextNameWords.includes(finalIngredients[i].name)){
+            finalIngredients.splice(i, 1)
+        }
+    }
+    return finalIngredients;
 };
 
 const ingredientsDOM = document.querySelector('.ingredientsList');
 const submitButton = document.querySelector('submit-btn');
 
-function makeStuffFromIngredientsArray(ingredientsObjectArray){
-    const allIngredients = ingredientsObjectArray.map((ingredient, index) => {
+function makeStuffFromIngredientsArray(finalIngredients){
+    removeRedundencies(finalIngredients);
+    const allIngredients = finalIngredients.map((ingredient, index) => {
         console.log(ingredient)
         return `<label><input type="checkbox" name="ingredient${index}" value="${ingredient.name}">${ingredient.name}</label><br>`
     }).join('');
