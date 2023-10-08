@@ -8,15 +8,18 @@
     <link rel="stylesheet" type="text/css" href="./style.css">
 </head>
 <body>
-    <form id="pdfForm" enctype="multipart/form-data">
-        <input type="file" name="pdf" id="pdfUpload">
-        <button type="submit">Upload</button>
-    </form>
-    <form id="ingredientsForm">
-        <div class="ingredientsList"></div>
-        <button type="submit" class="btn submit-btn">Submit Ingredients</button>
-    </form>
-    <button type="button" class="btn" id="sync-btn">Sync</button>
+    <div class="container">
+        <form id="pdfForm" enctype="multipart/form-data">
+            <input type="file" name="pdf" id="pdfUpload" class="btn">
+            <button class="btn" type="submit">Upload</button>
+        </form>
+        <form id="ingredientsForm">
+            <div class="ingredientsList"></div>
+            <button type="submit" class="btn submit-btn">Submit Ingredients</button>
+            <button type="button" class="btn" id="sync-btn">Sync</button>
+        </form>
+        
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="./pdf.worker.js"></script>
     <script src="./pdf.js"></script>

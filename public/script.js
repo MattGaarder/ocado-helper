@@ -166,8 +166,8 @@ function makeStuffFromIngredientsArray(finalIngredients){
     removeRedundencies(finalIngredients);
     const allIngredients = finalIngredients.map((ingredient, index) => {
         console.log("🚀 ~ file: script.js:158 ~ allIngredients ~ ingredient:", ingredient)
-        return `<label>
-                    <input type="checkbox" name="ingredient${index}" value="${ingredient.name}" data-location="${ingredient.location}">
+        return `<label class="ingredient-label">
+                    <input type="checkbox" name="ingredient${index}" value="${ingredient.name}" data-location="${ingredient.location}"  class="ingredient">
                         ${ingredient.name}
                 </label><br>`
     }).join('');
