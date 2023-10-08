@@ -90,7 +90,6 @@ function cleanText(pdfText, openFoodDatabase) {
     let capitalRegex = /^[A-Z]+$/
 
     for (let word of splitPdfText) {
-        // console.log("🚀 ~ file: script.js:93 ~ cleanText ~ word:", word)
         if(fridgeRegex.test(word)) storageLocation = "Fridge";
         if(cupboardRegex.test(word)) storageLocation = "Cupboard";
         if(freezerRegex.test(word)) storageLocation = "Freezer";
@@ -109,13 +108,10 @@ function cleanText(pdfText, openFoodDatabase) {
         if(adjectiveFoods.includes(word)){
             const combinedName = `${wordObjectArray[i - 1].name} ${word}`;
             finalIngredients.push({name: combinedName, location: wordObject.location});
-            // blockedItems.add(word);
             blockedItems.add(wordObjectArray[i - 1].name);
         } else if(prefixFoods.includes(word)){
             const combinedName = `${word} ${wordObjectArray[i + 1].name}`;
             finalIngredients.push({name: combinedName, location: wordObject.location});
-            // blockedItems.add(word);
-            // blockedItems.add(wordObjectArray[i + 1].name);
         } else if (isFoodItem(word, openFoodDatabase) && capitalRegex.test(word)){ // if the word is in the data base, and is not in blocked items
                 finalIngredients.push({name: word, location: wordObject.location}) // add it to final data set 
                 // blockedItems.add(word) // when it is added to the data set, add it to the blocked items also 
@@ -138,14 +134,6 @@ function cleanText(pdfText, openFoodDatabase) {
     }
    
     }
-    console.log("hey this is a meeee", finalIngredients);
-
-    // let ingredientsObjectArray = finalIngredients.map(ingredient => {
-    //         return {
-    //         name: ingredient,
-    //     }
-    // });
-    // console.log(ingredientsObjectArray)
     makeStuffFromIngredientsArray(finalIngredients)
     return finalIngredients;
     
@@ -167,8 +155,11 @@ const submitButton = document.querySelector('submit-btn');
 function makeStuffFromIngredientsArray(finalIngredients){
     removeRedundencies(finalIngredients);
     const allIngredients = finalIngredients.map((ingredient, index) => {
-        console.log(ingredient)
-        return `<label><input type="checkbox" name="ingredient${index}" value="${ingredient.name}">${ingredient.name}</label><br>`
+        console.log("🚀 ~ file: script.js:158 ~ allIngredients ~ ingredient:", ingredient)
+        return `<label>
+                    <input type="checkbox" name="ingredient${index}" value="${ingredient.name}" data-location="${ingredient.location}">
+                        ${ingredient.name}
+                </label><br>`
     }).join('');
     ingredientsDOM.innerHTML = allIngredients;
 }
@@ -179,7 +170,11 @@ document.getElementById("ingredientsForm").addEventListener("submit", async func
     const selectedIngredients = [];
 
     for (let [key, value] of formData) {
-        selectedIngredients.push(value);
+        const ingredientElement = document.querySelector(`input[name="${key}"]`)
+        const location = ingredientElement.getAttribute('data-location');
+        selectedIngredients.push({ name: value, location });
+        console.log("🚀 ~ file: script.js:176 ~ document.getElementById ~ selectedIngredients:", selectedIngredients)
+        
     }
 
     // Now, you can send selectedIngredients to MongoDB
@@ -192,3 +187,29 @@ document.getElementById("ingredientsForm").addEventListener("submit", async func
         // Error handling
     }
 });
+
+
+// When you construct the form and its checkboxes, you're using this format for the name attribute:
+
+// <input type="checkbox" name="ingredient${index}" value="${ingredient.name}" data-location="${ingredient.location}">
+
+// Here, ingredient${index} would result in a name like ingredient0, ingredient1, ingredient2, etc., based on the loop's current index.
+// Later, when the form is submitted, you collect the data from the form using:
+
+// const formData = new FormData(event.target);
+
+// For every checked checkbox in the form, formData will contain a key-value pair where the key is the name attribute of the checkbox and the value is the value attribute of the checkbox.
+
+// So, when you iterate through formData like this:
+
+// for (let [key, value] of formData) { ... }
+
+// The variable key will contain the name attribute of the checked checkboxes, like ingredient0, ingredient1, etc. And the variable value will contain the value attribute of the checked checkboxes, which would be the ingredient name.
+// Now, when you're trying to find the checkbox using:
+
+// const checkbox = document.querySelector(`input[name="${key}"]:checked`);
+
+// You're effectively saying, "Find me the <input> element in the document with the name ingredient0 (or ingredient1, etc.) that is also checked." Since key holds values like ingredient0, ingredient1, etc., this line of code perfectly matches the checkboxes in the form.
+// So, the selector input[name="${key}"]:checked works correctly because key contains the exact name attribute of the checkboxes that are checked.
+
+// In summary, the name attribute you've used while creating the checkboxes matches the key you get from iterating through the formData, and this is why the query selector works as expected.

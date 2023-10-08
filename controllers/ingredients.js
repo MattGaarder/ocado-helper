@@ -32,8 +32,11 @@ const updateIngredient = asyncWrapper(async (req, res, next) => {
 
 const addIngredients = asyncWrapper(async (req, res, next) => {
     const ingredients = req.body.ingredients;
-    // console.log("console logging ingredients on line 30 ", ingredients);
-    const ingredientObjects = ingredients.map(ingredient => ({ name: ingredient }));
+    console.log(req.body);
+    console.log("🚀 ~ file: ingredients.js:35 ~ addIngredients ~ ingredients:", ingredients)
+    const ingredientObjects = ingredients.map(ingredient => ({
+        name: ingredient.name,
+        location: ingredient.location }));
     const insertedIngredients = await Ingredient.insertMany(ingredientObjects);
     res.status(200).json({ ingredients: insertedIngredients });
 });
@@ -44,7 +47,7 @@ const addNotionIDToMongoEntryVariable = async function addNotionIDToMongoEntry(n
     for (let el of notionDataArray) {
         let mongoID = el.properties.MONGO_ID.rich_text[0].plain_text;
         let notionID = el.id;
-        console.log("notionID when iterating through addNotionIDToMongoEntryVariable", notionID)
+        // console.log("notionID when iterating through addNotionIDToMongoEntryVariable", notionID)
         // Update the document found by `_id` with the new `notionID`
         const ingredient = await Ingredient.findOneAndUpdate(
             { _id: mongoID }, // filter

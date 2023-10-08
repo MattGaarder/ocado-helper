@@ -64,7 +64,7 @@ const createPages = asyncWrapper(async(req, res) => {
     // console.log("this is mongoData logged in notionService on line 15: ", mongoData);
     const createdRows = [];
     for(let data of mongoData){
-        console.log("logging data.name when iterating through data of mondoData in notionService", data);
+        // console.log("logging data.name when iterating through data of mondoData in notionService", data);
         const notionData = await notion.pages.create({
             "parent": {
                 "type": "database_id",  // Replace with your Notion database ID
