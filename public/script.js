@@ -65,8 +65,8 @@ function getPageText(pageNum, PDFDocumentInstance) {
 pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.js'; // set path to pdf.worker.js
 
 let ingredientNames = [];
-let adjectiveFoods = ["MUSHROOMS", "CHEESE", "STEAKS", "JUICE", "LEAF", "SAUCE", "NOODLES", "BUTTER", "CREAM", "NUTS", "RICE", "ONIONS", "CRISPS", "YOGHURT"];        
-let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA", "CHOCOLATE"];
+let adjectiveFoods = ["MUSHROOMS", "CHEESE", "STEAKS", "JUICE", "LEAF", "SAUCE", "NOODLES", "BUTTER", "CREAM", "NUTS", "RICE", "ONIONS", "CRISPS", "YOGHURT", "OIL", "PASTA"];        
+let prefixFoods = ["SALMON", "PORK", "BEEF", "CHICKEN", "PASTA", "CHOCOLATE", "BAMBOO"];
 
     
 function isFoodItem(item, database) {
@@ -151,6 +151,16 @@ function removeRedundencies(finalIngredients) {
 
 const ingredientsDOM = document.querySelector('.ingredientsList');
 const submitButton = document.querySelector('submit-btn');
+
+document.getElementById("sync-btn").addEventListener("click", async function(event){
+    event.preventDefault();
+    console.log('sync pressed')
+    try {
+        await axios.post('/api/v1/notion/sync')
+    } catch(error){
+        console.log('sync error')
+    }
+})
 
 function makeStuffFromIngredientsArray(finalIngredients){
     removeRedundencies(finalIngredients);
