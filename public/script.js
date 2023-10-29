@@ -27,6 +27,7 @@ document.getElementById("pdfForm").addEventListener("submit", (event) => {
             getPageText(pageNumber, PDFDocumentInstance).then(function(textPage){
                 // Clean the text of the page
                 cleanText(textPage, databaseIngredients);
+                await syncToNotion();
                 // Use the cleaned text in your application
             });
         }, function (reason) {
@@ -40,6 +41,15 @@ document.getElementById("pdfForm").addEventListener("submit", (event) => {
         console.log('Error uploading file', error);
     })
 });
+
+async function syncToNotion() {
+    console.log('sync prsd');
+    try {
+        await axios.post('/api/v1/notion/sync'); 
+    } catch(error) {
+        console.log('sync errr:', error)
+    }
+}
 
 function getPageText(pageNum, PDFDocumentInstance) {
     // Return a Promise that is solved once the text of the page is retrieven
