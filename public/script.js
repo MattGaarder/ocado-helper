@@ -9,13 +9,13 @@ document.getElementById("pdfForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const formData = new FormData(event.target);
 
-    axios.post('http://localhost:3001/uploads', formData, {
+    axios.post('/uploads', formData, {
         headers: {
             'Content-Type': 'multipart/form-data'
         }
     }).then(response => {
         console.log('File uploaded successfully');
-        PDF_URL = `http://localhost:3001/${response.data.filePath}`;
+        PDF_URL = `/${response.data.filePath}`;
         fetch('./openfoodfacts.json')
     .then(response => response.json())
     .then(data => {
