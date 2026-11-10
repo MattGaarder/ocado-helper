@@ -21,7 +21,7 @@
 
     font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display",
         "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.5;
     accent-color: var(--primary);
 }
@@ -37,12 +37,13 @@
 body {
     background: var(--bg);
     color: var(--text);
-    padding: 16px;
+    padding: 14px 18px;
+    width: 100%;
 }
 
 .panel {
-    max-width: 900px;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
 }
 
 /* Title on the left, both buttons on one line on the right. Wraps only when
@@ -55,29 +56,31 @@ body {
     gap: 12px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
+    width: 100%;
 }
 
 .title {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 600;
 }
 
 .actions {
     display: flex;
-    gap: 8px;
+    gap: 10px;
 }
 
 .btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    height: 32px;
-    padding: 0 12px;
+    gap: 7px;
+    height: 36px;
+    padding: 0 14px;
     border: 1px solid var(--border-strong);
     border-radius: 6px;
     background: transparent;
     color: var(--text);
     font: inherit;
+    font-size: 14.5px;
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
@@ -130,8 +133,9 @@ body {
 }
 
 .status {
-    min-height: 21px;
+    min-height: 24px;
     margin-top: 10px;
+    font-size: 14.5px;
     color: var(--text-muted);
 }
 
@@ -146,7 +150,8 @@ body {
 /* Items written to Notion, shown as database-style rows */
 .results {
     list-style: none;
-    margin-top: 6px;
+    margin-top: 8px;
+    width: 100%;
 }
 
 .results li {
@@ -154,8 +159,9 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 6px 4px;
+    padding: 8px 6px;
     border-bottom: 1px solid var(--border);
+    font-size: 15px;
 }
 
 .results li:hover {
@@ -163,10 +169,10 @@ body {
 }
 
 .tag {
-    padding: 0 6px;
-    border-radius: 3px;
-    font-size: 12px;
-    line-height: 20px;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    line-height: 22px;
     background: var(--tag-gray);
     white-space: nowrap;
 }
