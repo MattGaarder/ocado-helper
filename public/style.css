@@ -1,93 +1,184 @@
-* {
+/* Notion-style dark theme, sized to sit inside a Notion embed block. */
+:root {
+    color-scheme: dark;
+
+    --bg: #191919;
+    --surface-hover: rgba(255, 255, 255, 0.055);
+    --border: rgba(255, 255, 255, 0.094);
+    --border-strong: rgba(255, 255, 255, 0.13);
+    --text: rgba(255, 255, 255, 0.81);
+    --text-muted: rgba(255, 255, 255, 0.46);
+    --primary: #2383e2;
+    --primary-hover: #0077d4;
+    --success: rgb(82, 158, 114);
+    --error: rgb(255, 115, 105);
+
+    /* Notion's dark-mode select-option colours */
+    --tag-gray: rgb(55, 55, 55);
+    --tag-brown: rgb(74, 50, 40);
+    --tag-blue: rgb(40, 69, 108);
+    --tag-purple: rgb(73, 47, 100);
+
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display",
+        "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    accent-color: var(--primary);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
 }
 
 body {
-    font-family: 'Arial', sans-serif; 
-    font-size: 16px;
-    line-height: 1.5;
-    color: #333;
-    padding: 20px;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    margin-bottom: 15px;
-}
-
-.container {
-    max-width: 1200px;
+.panel {
+    max-width: 900px;
     margin: 0 auto;
-    padding: 0 20px;
 }
 
-.text-center {
-    text-align: center;
+/* Title on the left, both buttons on one line on the right. Wraps only when
+   the embed is too narrow to fit them. */
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
 }
 
-form {
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
+.title {
+    font-size: 16px;
+    font-weight: 600;
 }
 
-input[type="file"], 
-input[type="checkbox"], 
-button {
-    margin-bottom: 10px;
-}
-
-label {
-    display: block;
-    margin-bottom: 10px;
-    color: #555;
+.actions {
+    display: flex;
+    gap: 8px;
 }
 
 .btn {
-    padding: 10px 20px;
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-weight: 500;
+    white-space: nowrap;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.15s ease;
 }
 
 .btn:hover {
-    background-color: #0056b3;
+    background: var(--surface-hover);
 }
 
-#ingredientsForm {
-    /* display: flex; */
+.btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 
-.ingredientsList {
+.btn-primary {
+    background: var(--primary);
+    border-color: transparent;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn[aria-busy="true"] {
+    cursor: progress;
+}
+
+.btn[aria-busy="true"] span {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn[aria-busy="true"] span {
+        animation: none;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.status {
+    min-height: 21px;
+    margin-top: 10px;
+    color: var(--text-muted);
+}
+
+.status[data-tone="success"] {
+    color: var(--success);
+}
+
+.status[data-tone="error"] {
+    color: var(--error);
+}
+
+/* Items written to Notion, shown as database-style rows */
+.results {
+    list-style: none;
+    margin-top: 6px;
+}
+
+.results li {
     display: flex;
-    padding-top: 3rem;
-    margin-top: 1%;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--border);
 }
 
-.ingredient-label {
-    position: relative;
-    cursor: pointer;
+.results li:hover {
+    background: var(--surface-hover);
 }
 
-.ingredient-label::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 10px;
-    height: 10px;
-    border: 2px solid #007BFF;
+.tag {
+    padding: 0 6px;
     border-radius: 3px;
+    font-size: 12px;
+    line-height: 20px;
+    background: var(--tag-gray);
+    white-space: nowrap;
 }
 
-.ingredient:checked + .ingredient-label::before {
-    background-color: #007BFF;
+.tag[data-location="Fridge"] {
+    background: var(--tag-blue);
+}
+
+.tag[data-location="Cupboard"] {
+    background: var(--tag-brown);
+}
+
+.tag[data-location="Frozen"] {
+    background: var(--tag-purple);
 }

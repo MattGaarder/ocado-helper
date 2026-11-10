@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDataBase, getIds, updateData } = require('../controllers/notionService');
+const { getDataBase, getIds, updateData, syncFromNotion } = require('../controllers/notionService');
 
 const router = express.Router();
 
@@ -18,10 +18,19 @@ router.post('/getIds', async (req, res, next) => {
     }
 });
 
-// The original sync operation deleted MongoDB rows that did not appear in a
-// partial Notion query. Keep the endpoint explicit and safe until it is rebuilt.
-router.post('/sync', (req, res) => {
-    res.status(410).json({ msg: 'Sync is disabled while the data flow is rebuilt' });
+// Mirrors the Notion database into MongoDB (edits, new rows, and deletions).
+// The original version compared against a single (max 100 row) Notion query and
+// deleted every Mongo row it could not find, including rows that were never sent
+// to Notion. This version paginates and only deletes rows that were linked to
+// Notion. Send { "dryRun": true } to preview the changes without writing.
+router.post('/sync', async (req, res, next) => {
+    try {
+        const dryRun = req.body?.dryRun === true;
+        const result = await syncFromNotion({ dryRun });
+        res.status(200).json(result);
+    } catch (error) {
+        next(error);
+    }
 });
 
 router.get('/', (req, res) => {

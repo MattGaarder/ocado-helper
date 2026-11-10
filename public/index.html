@@ -2,25 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
     <title>Ocado Helper</title>
-    <link rel="stylesheet" type="text/css" href="./style.css">
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <div class="container">
-        <form id="pdfForm" enctype="multipart/form-data">
-            <input type="file" name="pdf" id="pdfUpload" class="btn">
-            <button class="btn" type="submit">Upload</button>
-        </form>
-        <form id="ingredientsForm">
-            <div class="ingredientsList"></div>
-            <button type="submit" class="btn submit-btn">Submit Ingredients</button>
-        </form>
-        
-    </div>
+    <main class="panel">
+        <div class="toolbar">
+            <span class="title">🛒 Ocado Helper</span>
+            <div class="actions">
+                <input type="file" id="pdfUpload" accept="application/pdf" hidden>
+                <button type="button" id="uploadButton" class="btn btn-primary">
+                    <span aria-hidden="true">⤒</span> Upload receipt
+                </button>
+                <button type="button" id="syncButton" class="btn">
+                    <span aria-hidden="true">⟳</span> Sync with Notion
+                </button>
+            </div>
+        </div>
+
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+        <ul id="results" class="results"></ul>
+    </main>
+
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="./pdf.worker.js"></script>
     <script src="./pdf.js"></script>
     <script src="./script.js"></script>
 </body>

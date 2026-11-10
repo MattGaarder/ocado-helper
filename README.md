@@ -28,8 +28,9 @@ Tracking kitchen inventory manually after every grocery delivery is tedious, whi
 1. **Extracts raw text** from uploaded Ocado receipt PDFs in the browser using Mozilla's `PDF.js`.
 2. **Infers storage zones** (`Fridge`, `Cupboard`, `Frozen`) by tracking receipt section headers as a state machine.
 3. **Filters noise and reconstructs food names** by cross-referencing receipt tokens against a 2.4 MB **OpenFoodFacts** ingredient taxonomy, handling plural morphology and compound food names.
-4. **Provides a human-in-the-loop verification step** so users can review and toggle detected ingredients before committing.
-5. **Synchronizes state across MongoDB and Notion**, maintaining bidirectional foreign-key references (`MONGO_ID` ↔ `notionID`) between both systems.
+4. **Writes straight to Notion with no manual step**: picking a receipt file uploads, parses, stores, and populates Notion in one action.
+5. **Syncs Notion back into MongoDB**: rows edited, added, or deleted in Notion are mirrored into MongoDB with one click, using bidirectional foreign-key references (`MONGO_ID` ↔ `notionID`) between both systems.
+6. **Embeds inside Notion** as a compact, Notion-style dark-mode toolbar.
 
 ---
 
@@ -44,14 +45,12 @@ sequenceDiagram
     participant Mongo as MongoDB Atlas (Mongoose)
     participant Notion as Notion API (@notionhq/client)
 
-    User->>UI: Select Ocado Receipt PDF & Click "Upload"
+    User->>UI: Click "Upload receipt" & choose an Ocado PDF
     UI->>API: POST /uploads (multipart/form-data)
     API-->>UI: 200 OK { filePath: "/uploads/<timestamp>_receipt.pdf" }
     UI->>API: GET /openfoodfacts.json & PDF binary
-    UI->>UI: Extract PDF text via pdf.worker.js
+    UI->>UI: Extract text from every page via pdf.worker.js
     UI->>UI: Run lexical parser, stemmer & storage-zone state machine
-    UI-->>User: Render interactive ingredient checklist
-    User->>UI: Review items & Click "Submit Ingredients"
     UI->>API: POST /api/v1/ingredients { ingredients: [...] }
     API->>Mongo: Ingredient.insertMany(ingredientObjects)
     Mongo-->>API: Return created documents with ObjectIds (_id)
@@ -61,20 +60,28 @@ sequenceDiagram
         API->>Mongo: Ingredient.findByIdAndUpdate(_id, { notionID })
     end
     API-->>UI: 201 Created { ingredients, notionPages }
+    UI-->>User: Show the items that were added to Notion
+
+    Note over User,Notion: Later, after editing the Notion database
+    User->>UI: Click "Sync with Notion"
+    UI->>API: POST /api/v1/notion/sync
+    API->>Notion: databases.query (follows next_cursor across all pages)
+    API->>Mongo: Update edited rows, create rows added in Notion, delete rows removed from Notion
+    API-->>UI: { created, updated, deleted }
 ```
 
-### The 5-Stage Pipeline
+### The Pipeline
 
 1. **Stage 1 — Multipart File Ingestion (`POST /uploads`)**:
    The client submits the receipt PDF using `FormData`. Express processes the upload stream via **Multer** disk storage middleware, stamping the filename with a Unix timestamp (`Date.now()`) to prevent collisions, and serves the file path back to the client.
 2. **Stage 2 — Client-Side Binary Text Extraction (`PDF.js`)**:
-   Using a dedicated Web Worker (`pdf.worker.js`), the browser loads the uploaded PDF document off the main thread, iterates through the PDF's text layer items (`page.getTextContent()`), and flattens the spatial text blocks into a sequential token stream.
+   Using a dedicated Web Worker (`pdf.worker.js`), the browser loads the uploaded PDF document off the main thread, iterates through each page's text layer items (`page.getTextContent()`), and flattens the spatial text blocks into a sequential token stream.
 3. **Stage 3 — Lexical Heuristics & Taxonomy Matching**:
    The raw text stream is passed through `cleanText()`, which tracks the current storage category (`Fridge`, `Cupboard`, `Freezer`), strips plural suffixes (`-S`, `-ES`), pairs modifier tokens into compound nouns (e.g., `SALAD ONIONS`, `CHICKEN WINGS`), and validates candidate tokens against the **OpenFoodFacts** tag corpus (`openfoodfacts.json`).
-4. **Stage 4 — Human-in-the-Loop Selection**:
-   Deduplicated ingredients are dynamically rendered as HTML checkboxes with their inferred storage location bound to `data-location` attributes (`dataset.location`).
-5. **Stage 5 — Dual-Write Persistence & Cross-Linking (`POST /api/v1/ingredients`)**:
-   Checked items are sent to the Express backend, validated and normalized, batch-inserted into **MongoDB Atlas**, and then written to **Notion** via the official `@notionhq/client` SDK. Each Notion page stores the MongoDB `_id`, and each MongoDB document is updated with the resulting `notionID`.
+4. **Stage 4 — Dual-Write Persistence & Cross-Linking (`POST /api/v1/ingredients`)**:
+   Detected items go straight to the Express backend with no manual review step. They are validated and normalized, batch-inserted into **MongoDB Atlas**, and then written to **Notion** via the official `@notionhq/client` SDK. Each Notion page stores the MongoDB `_id`, and each MongoDB document is updated with the resulting `notionID`.
+5. **Stage 5 — Notion → MongoDB Sync (`POST /api/v1/notion/sync`)**:
+   Notion is where the inventory is actually managed, so it is the source of truth. The sync reads every Notion row (following pagination cursors), then updates MongoDB documents whose name or storage changed, creates documents for rows added directly in Notion (writing the new `MONGO_ID` back), and deletes documents whose Notion row was removed. Only documents that were linked to Notion can be deleted.
 
 ---
 
@@ -170,7 +177,7 @@ function cleanText(pdfText, openFoodDatabase) {
 
 ### 2. Cross-Database Synchronization (MongoDB ↔ Notion)
 
-When a user submits selected ingredients, the backend ensures data consistency across MongoDB and Notion. First, [`controllers/ingredients.js`](controllers/ingredients.js) validates and batch-inserts the documents into MongoDB so each item receives a unique `_id`. Next, [`controllers/notionService.js`](controllers/notionService.js) creates the corresponding Notion database pages with the MongoDB `_id` embedded as rich text, and writes the newly generated Notion page ID back to the MongoDB document:
+When the pipeline runs, the backend keeps MongoDB and Notion consistent. First, [`controllers/ingredients.js`](controllers/ingredients.js) validates and batch-inserts the documents into MongoDB so each item receives a unique `_id`. Next, [`controllers/notionService.js`](controllers/notionService.js) creates the corresponding Notion database pages with the MongoDB `_id` embedded as rich text, and writes the newly generated Notion page ID back to the MongoDB document:
 
 ```javascript
 // controllers/ingredients.js
@@ -266,7 +273,7 @@ A raw receipt contains hundreds of non-food words (addresses, order numbers, wei
 ### 3. Cross-System Data Integrity & Safe Synchronization
 Synchronizing state between an application database (**MongoDB**) and a third-party workspace API (**Notion**) taught me important lessons about distributed data integrity:
 * **Bidirectional Linking**: By inserting into MongoDB first, passing the resulting `_id` into Notion's `MONGO_ID` property, and then updating the MongoDB record with Notion's `page.id` (`notionID`), both databases retain an explicit foreign-key link for future updates or deletions.
-* **Guarding Against Partial-Read Data Loss**: Third-party APIs like Notion paginate query responses (returning at most 100 items per request by default). Early iterations of a two-way `/sync` endpoint compared MongoDB rows against a single unpaginated Notion query and deleted rows that didn't appear—which risked wiping valid database records once the Notion table grew. Recognizing this failure mode led to isolating the write pipeline and disabling destructive sync until cursor-based pagination is used.
+* **Guarding Against Partial-Read Data Loss**: Notion paginates query responses (at most 100 rows per request). The first version of the `/sync` endpoint compared MongoDB against a single unpaginated query and deleted every Mongo row it couldn't find. That would have wiped valid records once the table grew past 100 rows. It would also have deleted 328 older documents that had never been sent to Notion at all. The rebuilt sync follows `next_cursor` until it has every row, and it only deletes documents that carry a `notionID`. Supports `{ "dryRun": true }` to preview changes before writing anything.
 
 ### 4. Multipart Binary Uploads & Environment Portability
 Configuring **Multer** disk storage taught me how multipart streams are buffered and written on the server. Furthermore, refactoring hardcoded `localhost` URLs to relative paths and binding Express to `process.env.PORT || 3001` demonstrated how a unified Express process can seamlessly serve both static frontend assets and REST API routes across local and cloud (PaaS) environments.
@@ -279,9 +286,10 @@ Configuring **Multer** disk storage taught me how multipart streams are buffered
 | :--- | :--- | :--- |
 | `POST` | `/uploads` | Uploads a receipt PDF (`multipart/form-data`, field `pdf`) and returns `{ filePath }`. |
 | `GET` | `/api/v1/ingredients` | Retrieves all stored ingredient documents from MongoDB. |
-| `POST` | `/api/v1/ingredients` | Batch-inserts selected ingredients into MongoDB and creates corresponding Notion pages. |
+| `POST` | `/api/v1/ingredients` | Batch-inserts detected ingredients into MongoDB and creates corresponding Notion pages. |
 | `PATCH` | `/api/v1/ingredients/:id` | Updates a specific ingredient document in MongoDB by `_id`. |
 | `DELETE` | `/api/v1/ingredients/:id` | Deletes a specific ingredient document from MongoDB by `_id`. |
+| `POST` | `/api/v1/notion/sync` | Mirrors the Notion database into MongoDB (edits, new rows, deletions). Body `{ "dryRun": true }` previews without writing. |
 | `GET` | `/api/v1/notion/database` | Retrieves metadata and schema properties for the configured Notion database. |
 | `POST` | `/api/v1/notion/getIds` | Queries the Notion database to inspect existing page records. |
 
@@ -295,7 +303,7 @@ ocado-helper/
 ├── parseDatabase.js            # Utility script for exploring CSV/JSON food datasets
 ├── controllers/
 │   ├── ingredients.js          # CRUD controllers for MongoDB ingredients + Notion trigger
-│   └── notionService.js        # Notion SDK client & page creation logic
+│   └── notionService.js        # Notion page creation and Notion → MongoDB sync
 ├── database/
 │   ├── mongoConnect.js         # Mongoose connection wrapper
 │   ├── ingredients.csv         # Raw ingredient taxonomy CSV dataset
@@ -363,7 +371,9 @@ npm run check
 
 ### 6. Test the Full Pipeline
 1. Open [`http://localhost:3001`](http://localhost:3001) in your browser.
-2. Click **Choose File** and select one of the included sample receipts (`public/receipt.pdf` or `public/receipt-3333162999.pdf`).
-3. Click **Upload** to parse the PDF and generate the categorized ingredient checklist.
-4. Check the items you want to track and click **Submit Ingredients**.
-5. Verify the newly created entries in your **Notion database** and at [`http://localhost:3001/api/v1/ingredients`](http://localhost:3001/api/v1/ingredients).
+2. Click **Upload receipt** and choose one of the included sample receipts (`public/receipt.pdf` or `public/receipt-3333162999.pdf`).
+3. The detected items are written to your **Notion database** straight away and listed under the toolbar.
+4. Edit, add, or delete rows in Notion, then click **Sync with Notion** to mirror those changes into MongoDB. Check the result at [`http://localhost:3001/api/v1/ingredients`](http://localhost:3001/api/v1/ingredients).
+
+### 7. Embedding in Notion
+Notion embeds need a public **HTTPS** URL, so `localhost` won't load inside a Notion page. Deploy the app (for example to Heroku, Render, or Railway, with the same three environment variables set). Then paste the URL into Notion and choose **Create embed**.
