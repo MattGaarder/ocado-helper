@@ -1,7 +1,9 @@
-let pdfUrl = null;
-let databaseIngredients = [];
+const fileInput = document.getElementById('pdfUpload');
+const uploadButton = document.getElementById('uploadButton');
+const syncButton = document.getElementById('syncButton');
+const statusDOM = document.getElementById('status');
+const resultsDOM = document.getElementById('results');
 
-const ingredientsDOM = document.querySelector('.ingredientsList');
 const adjectiveFoods = [
     'MUSHROOMS', 'CHEESE', 'STEAKS', 'JUICE', 'LEAF', 'SAUCE', 'NOODLES',
     'BUTTER', 'CREAM', 'NUTS', 'RICE', 'ONIONS', 'CRISPS', 'YOGHURT', 'OIL', 'PASTA'
@@ -10,29 +12,117 @@ const prefixFoods = ['SALMON', 'PORK', 'BEEF', 'CHICKEN', 'PASTA', 'CHOCOLATE', 
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
 
-document.getElementById('pdfForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
+// The OpenFoodFacts list is 2.4 MB, so fetch it once and reuse it.
+let foodDatabasePromise = null;
+function loadFoodDatabase() {
+    foodDatabasePromise ??= fetch('/openfoodfacts.json').then((response) => {
+        if (!response.ok) throw new Error('Could not load the ingredient database');
+        return response.json();
+    }).then((database) => database.tags.map((tag) => tag.name));
+    foodDatabasePromise.catch(() => { foodDatabasePromise = null; });
+    return foodDatabasePromise;
+}
 
+function setStatus(message, tone = '') {
+    statusDOM.textContent = message;
+    statusDOM.dataset.tone = tone;
+}
+
+// Disables both buttons while one action runs so uploads and syncs never overlap.
+async function runTask(button, task) {
+    uploadButton.disabled = true;
+    syncButton.disabled = true;
+    button.setAttribute('aria-busy', 'true');
     try {
-        const formData = new FormData(event.target);
-        const uploadResponse = await axios.post('/uploads', formData);
-        pdfUrl = uploadResponse.data.filePath;
+        await task();
+    } catch (error) {
+        console.error(error);
+        setStatus(error.response?.data?.msg || error.message || 'Something went wrong', 'error');
+    } finally {
+        uploadButton.disabled = false;
+        syncButton.disabled = false;
+        button.removeAttribute('aria-busy');
+    }
+}
 
-        const databaseResponse = await fetch('/openfoodfacts.json');
-        if (!databaseResponse.ok) {
-            throw new Error('Could not load the ingredient database');
+function renderResults(ingredients) {
+    resultsDOM.replaceChildren(...ingredients.map((ingredient) => {
+        const row = document.createElement('li');
+        const name = document.createElement('span');
+        const tag = document.createElement('span');
+        name.textContent = ingredient.name;
+        tag.className = 'tag';
+        tag.dataset.location = ingredient.location;
+        tag.textContent = ingredient.location;
+        row.append(name, tag);
+        return row;
+    }));
+}
+
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
+uploadButton.addEventListener('click', () => fileInput.click());
+
+// Choosing a file runs the whole pipeline: upload, parse, save to MongoDB, write to Notion.
+fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    runTask(uploadButton, async () => {
+        resultsDOM.replaceChildren();
+        setStatus(`Reading ${file.name}…`);
+
+        const [fileBuffer, foodNames] = await Promise.all([
+            file.arrayBuffer(),
+            loadFoodDatabase()
+        ]);
+
+        const pdfDocument = await pdfjsLib.getDocument({ data: fileBuffer }).promise;
+        const ingredients = cleanText(await getAllText(pdfDocument), foodNames);
+
+        if (ingredients.length === 0) {
+            setStatus(`No ingredients found in ${file.name}.`, 'error');
+            return;
         }
 
-        const database = await databaseResponse.json();
-        databaseIngredients = database.tags.map((tag) => tag.name);
+        setStatus(`Adding ${plural(ingredients.length, 'item')} to Notion…`);
+        const { data } = await axios.post('/api/v1/ingredients', { ingredients });
 
-        const pdfDocument = await pdfjsLib.getDocument(pdfUrl).promise;
-        const firstPageText = await getPageText(1, pdfDocument);
-        makeStuffFromIngredientsArray(cleanText(firstPageText, databaseIngredients));
-    } catch (error) {
-        console.error('Could not process the receipt', error);
-    }
+        renderResults(data.ingredients);
+        setStatus(`Added ${plural(data.ingredients.length, 'item')} to Notion.`, 'success');
+    }).finally(() => {
+        // Clear the input so picking the same file again still fires "change".
+        fileInput.value = '';
+    });
 });
+
+syncButton.addEventListener('click', () => {
+    runTask(syncButton, async () => {
+        setStatus('Syncing with Notion…');
+        const { data } = await axios.post('/api/v1/notion/sync');
+
+        resultsDOM.replaceChildren();
+        const { created, updated, deleted, notionRows } = data;
+        if (created.length + updated.length + deleted.length === 0) {
+            setStatus(`Already in sync (${plural(notionRows, 'Notion row')}).`, 'success');
+            return;
+        }
+        setStatus(
+            `Synced ${plural(notionRows, 'Notion row')}: ${created.length} added, ` +
+            `${updated.length} updated, ${deleted.length} removed from MongoDB.`,
+            'success'
+        );
+    });
+});
+
+// Receipts can run over several pages, so read them all.
+async function getAllText(pdfDocument) {
+    const pages = [];
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum += 1) {
+        pages.push(await getPageText(pageNum, pdfDocument));
+    }
+    return pages.join(' ');
+}
 
 function getPageText(pageNum, pdfDocument) {
     return pdfDocument.getPage(pageNum).then((pdfPage) =>
@@ -119,40 +209,3 @@ function removeRedundancies(ingredients) {
     });
 }
 
-function makeStuffFromIngredientsArray(ingredients) {
-    ingredientsDOM.replaceChildren();
-
-    for (const [index, ingredient] of ingredients.entries()) {
-        const label = document.createElement('label');
-        label.className = 'ingredient-label';
-
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.name = `ingredient${index}`;
-        input.value = ingredient.name;
-        input.dataset.location = ingredient.location;
-        input.className = 'ingredient';
-
-        label.append(input, ` ${ingredient.name}`);
-        ingredientsDOM.append(label, document.createElement('br'));
-    }
-}
-
-document.getElementById('ingredientsForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    const selectedIngredients = Array.from(
-        document.querySelectorAll('.ingredient:checked')
-    ).map((ingredient) => ({
-        name: ingredient.value,
-        location: ingredient.dataset.location
-    }));
-
-    if (selectedIngredients.length === 0) return;
-
-    try {
-        await axios.post('/api/v1/ingredients', { ingredients: selectedIngredients });
-    } catch (error) {
-        console.error('Could not save ingredients', error);
-    }
-});
