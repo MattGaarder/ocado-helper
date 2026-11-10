@@ -1,2 +1,9 @@
-/node_modules
+node_modules/
 .env
+.env.*
+!.env.example
+.DS_Store
+
+# PDFs are runtime uploads. Keep the directory but not its contents in Git.
+uploads/*
+!uploads/.gitkeep

@@ -4,7 +4,9 @@
   "description": "One stop shop for all your recipe needs.",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "node app.js",
+    "dev": "node --watch app.js",
+    "check": "node --check app.js && node --check public/script.js"
   },
   "repository": {
     "type": "git",
